@@ -3,3 +3,7 @@
 **/__pycache__/
 **/.next/
 **/node_modules/
+# Celery Beat generated files
+Backend_Track_It/celerybeat-schedule
+Backend_Track_It/celerybeat-schedule-shm
+Backend_Track_It/celerybeat-schedule-wal

@@ -1,53 +1,102 @@
+
 services:
-  # PostgreSQL database service
   db:
     image: postgres:15
     container_name: trackit-db
     restart: unless-stopped
-
     environment:
       POSTGRES_DB: trackitdb
       POSTGRES_USER: trackituser
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-
     ports:
       - "5433:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql/data
-
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trackituser -d trackitdb"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  # Django backend service
+  redis:
+    image: redis:7-alpine
+    container_name: trackit-redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
   backend:
     build:
       context: ./Backend_Track_It
-
     container_name: trackit-backend
-
+    restart: unless-stopped
     env_file:
       - .env
-
     environment:
       POSTGRES_DB: trackitdb
       POSTGRES_USER: trackituser
       POSTGRES_HOST: db
-      POSTGRES_PORT: 5432
-
+      POSTGRES_PORT: "5432"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
     ports:
       - "8001:8000"
-
     volumes:
       - ./Backend_Track_It:/app
-
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_healthy
 
-# Persistent PostgreSQL storage
+  celery-worker:
+    build:
+      context: ./Backend_Track_It
+    container_name: trackit-worker
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: trackitdb
+      POSTGRES_USER: trackituser
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: python -m celery -A config.celery:app worker --loglevel=info
+    volumes:
+      - ./Backend_Track_It:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: ./Backend_Track_It
+    container_name: trackit-beat
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      POSTGRES_DB: trackitdb
+      POSTGRES_USER: trackituser
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+    command: python -m celery -A config.celery:app beat --loglevel=info
+    volumes:
+      - ./Backend_Track_It:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
 volumes:
   postgres_data:

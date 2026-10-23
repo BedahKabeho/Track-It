@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -132,3 +133,39 @@ MAILERS = {
         'BACKEND': 'django.core.mail.backends.console.EmailBackend',
     },
 }
+
+
+# Celery configuration
+CELERY_BROKER_URL = os.getenv(
+    "CELERY_BROKER_URL",
+    "redis://redis:6379/0",
+)
+
+CELERY_RESULT_BACKEND = os.getenv(
+    "CELERY_RESULT_BACKEND",
+    "redis://redis:6379/1",
+)
+
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_ENABLE_UTC = USE_TZ
+CELERY_TASK_TRACK_STARTED = True
+
+CELERY_BEAT_SCHEDULE = {
+    "upcoming-task-reminders-morning": {
+        "task": "tasks.tasks.send_upcoming_task_reminders",
+        "schedule": crontab(hour=9, minute=0),
+    },
+    "upcoming-task-reminders-afternoon": {
+        "task": "tasks.tasks.send_upcoming_task_reminders",
+        "schedule": crontab(hour=16, minute=0),
+    },
+    "overdue-task-reminders-morning": {
+        "task": "tasks.tasks.send_overdue_task_reminders",
+        "schedule": crontab(hour=9, minute=0),
+    },
+    "in-progress-task-reminders": {
+        "task": "tasks.tasks.send_in_progress_reminders",
+        "schedule": crontab(minute="*/15"),
+    },
+}
+

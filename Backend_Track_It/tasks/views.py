@@ -125,5 +125,3 @@ class NotificationReadView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         serializer.save(read_at=timezone.now())
 
-
-# Create your views here.
