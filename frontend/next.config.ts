@@ -1,7 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* Keep to defaults until experimental features are needed. */
+  async rewrites() {
+    const backendUrl = process.env.BACKEND_URL ?? "http://localhost:8001";
+    return [{ source: "/api/:path*", destination: `${backendUrl}/api/:path*` }];
+  },
 };
 
 export default nextConfig;
