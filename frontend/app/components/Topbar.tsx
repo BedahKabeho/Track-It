@@ -27,9 +27,9 @@ export default function Topbar({ title = "Home" }: { title?: string }) {
       </div>
       <div className="topbar-right">
         <time>{date}</time>
-        <button className="icon-btn bordered" aria-label="Notifications">
+        <Link className="icon-btn bordered" aria-label="Notifications" href="/notifications">
           <Icon name="bell" size={15} />
-        </button>
+        </Link>
       </div>
     </header>
   );

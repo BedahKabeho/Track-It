@@ -19,7 +19,6 @@ export type Workspace = {
   total: number;
   footer: { kind: "due" | "quiet"; text: string };
 };
-
 export const user = {
   firstName: "Alex",
   fullName: "Alex Morgan",

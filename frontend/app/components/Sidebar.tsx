@@ -1,58 +1,78 @@
+"use client";
+
 import Link from "next/link";
-import { user, workspaces } from "@/lib/data";
+import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
+import type { Account, WorkspaceRecord } from "@/lib/api";
+import { apiRequest, TOKEN_KEY } from "@/lib/api";
+import { user as sampleUser, workspaces as sampleWorkspaces } from "@/lib/data";
 import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
 
-export default function Sidebar({ activeWorkspaceId }: { activeWorkspaceId?: string } = {}) {
+export default function Sidebar({ profile, workspaces, activeWorkspaceId }: {
+  profile?: Account;
+  workspaces?: WorkspaceRecord[];
+  activeWorkspaceId?: string;
+} = {}) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const [signingOut, setSigningOut] = useState(false);
+  const account = profile ?? { id: 0, full_name: sampleUser.fullName, email: "" };
+  const workspaceList = workspaces ?? sampleWorkspaces.map((workspace) => ({
+    id: Number.isNaN(Number(workspace.id)) ? workspace.id : Number(workspace.id),
+    name: workspace.name,
+    description: workspace.tagline,
+    created_at: "",
+    updated_at: "",
+  }));
+  const initials = account.full_name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await apiRequest("/api/auth/logout/", { method: "POST" });
+    } catch {
+      // Clear local credentials even if the server is unavailable.
+    } finally {
+      window.localStorage.removeItem(TOKEN_KEY);
+      router.replace("/login");
+    }
+  }
+
   return (
     <aside className="sidebar">
-      <Link href="/" className="brand" aria-label="TrackItz home">
-        <span className="brand-mark">
-          <Icon name="check-square" size={16} strokeWidth={2.25} />
-        </span>
+      <Link href="/" className="brand" aria-label="Trackitz home">
+        <span className="brand-mark"><Icon name="check-square" size={16} strokeWidth={2.25} /></span>
         <span className="brand-name">TrackItz</span>
       </Link>
-
       <nav className="nav" aria-label="Main">
-        <Link href="/" className={`nav-item ${activeWorkspaceId ? "" : "active"}`} aria-current={!activeWorkspaceId ? "page" : undefined}>
-          <Icon name="home" />
-          <span>Home</span>
+        <Link href="/" className={`nav-item ${pathname === "/" ? "active" : ""}`} aria-current={pathname === "/" ? "page" : undefined}>
+          <Icon name="home" /><span>Home</span>
         </Link>
-        <Link href="/notifications" className="nav-item">
-          <Icon name="bell" />
-          <span>Notifications</span>
-          <span className="nav-badge">{user.unreadNotifications}</span>
+        <Link href="/notifications" className={`nav-item ${pathname.startsWith("/notifications") ? "active" : ""}`} aria-current={pathname.startsWith("/notifications") ? "page" : undefined}>
+          <Icon name="bell" /><span>Notifications</span>
         </Link>
       </nav>
-
-      <div className="nav-section">
-        <span className="nav-section-label">Workspaces</span>
-        <button className="icon-btn" aria-label="Create workspace">
-          <Icon name="plus" size={14} />
-        </button>
-      </div>
-
+      <div className="nav-section"><span className="nav-section-label">Workspaces</span></div>
       <nav className="nav" aria-label="Workspaces">
-        {workspaces.map((w) => (
-          <Link key={w.id} href={`/workspaces/${w.id}`} className={`nav-item ${activeWorkspaceId === w.id ? "active" : ""}`} aria-current={activeWorkspaceId === w.id ? "page" : undefined}>
-            <WorkspaceIcon name={w.icon} />
-            <span>{w.name}</span>
-          </Link>
-        ))}
+        {workspaceList.map((workspace, index) => {
+          const href = `/workspaces/${workspace.id}`;
+          const active = pathname === href || pathname.startsWith(`${href}/`) || (activeWorkspaceId === String(workspace.id) && pathname.startsWith("/workspaces/"));
+          return (
+            <Link key={workspace.id} href={href} className={`nav-item ${active ? "active" : ""}`} aria-current={active ? "page" : undefined}>
+              <WorkspaceIcon name={(["code", "book", "briefcase"] as const)[index % 3]} />
+              <span>{workspace.name}</span>
+            </Link>
+          );
+        })}
       </nav>
-
       <div className="sidebar-bottom">
-        <Link href="/help" className="nav-item">
-          <Icon name="help" />
-          <span>Help &amp; getting started</span>
-        </Link>
-        <button className="account">
-          <span className="avatar">{user.initials}</span>
-          <span className="account-text">
-            <strong>{user.fullName}</strong>
-            <small>{user.account}</small>
-          </span>
-          <Icon name="chevrons-up-down" size={14} />
+        <div className="account">
+          <span className="avatar">{initials || "U"}</span>
+          <span className="account-text"><strong>{account.full_name}</strong><small>{account.email}</small></span>
+        </div>
+        <button className="nav-item muted sign-out" disabled={signingOut} onClick={signOut} type="button">
+          <Icon name="chevrons-up-down" size={14} /><span>{signingOut ? "Signing out…" : "Sign out"}</span>
         </button>
       </div>
     </aside>

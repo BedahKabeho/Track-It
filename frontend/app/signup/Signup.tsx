@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { authApi } from "@/src/lib/api/auth";
 import Icon from "@/app/components/Icon";
+import { apiRequest, TOKEN_KEY, type Account } from "@/lib/api";
 
 type PasswordFieldProps = {
   id: string;
@@ -43,6 +45,7 @@ function PasswordField({ id, label, placeholder, value, onChange }: PasswordFiel
 }
 
 export default function SignupForm() {
+  const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -63,13 +66,20 @@ export default function SignupForm() {
     const formData = new FormData(event.currentTarget);
 
     try {
-      await authApi.register({
-        name: String(formData.get("full_name") ?? "").trim(),
-        email: String(formData.get("email") ?? "").trim(),
-        password,
-      });
+      const result = await apiRequest<{ user: Account; token: string }>("/api/auth/register/", {
+        method: "POST",
+        body: JSON.stringify({
+          full_name: formData.get("full_name"),
+          email: formData.get("email"),
+          password,
+          terms_accepted: formData.get("terms_accepted") === "on",
+        }),
+      }, false);
+      window.localStorage.setItem(TOKEN_KEY, result.token);
+      const profile = await apiRequest<{ user: Account }>("/api/auth/me/");
       setMessageType("success");
       setMessage("Account created successfully. You can now sign in.");
+      window.setTimeout(() => router.replace("/"), 700);
     } catch (error) {
       setMessageType("error");
       setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");
