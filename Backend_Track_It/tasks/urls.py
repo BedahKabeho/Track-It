@@ -1,21 +1,10 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from rest_framework.authtoken.views import obtain_auth_token
-from .views import WorkspaceViewSet, TaskViewSet, RegisterView
-
-router = DefaultRouter()
-router.register(r'workspaces', WorkspaceViewSet, basename='workspace')
-router.register(r'tasks', TaskViewSet, basename='task')
-
-urlpatterns = [
-    path('', include(router.urls)),
-    path('auth/register/', RegisterView.as_view(), name='api-register'),
-    path('auth/login/', obtain_auth_token, name='api-login'),
-]
 
 from django.urls import path
+from rest_framework.authtoken.views import obtain_auth_token
 
 from .views import (
+    RegisterView,
+    LogoutView,
     WorkspaceListCreateView,
     WorkspaceDetailView,
     TaskListCreateView,
@@ -25,6 +14,24 @@ from .views import (
 )
 
 urlpatterns = [
+    # Authentication
+    path(
+        "auth/register/",
+        RegisterView.as_view(),
+        name="register",
+    ),
+    path(
+        "auth/login/",
+        obtain_auth_token,
+        name="login",
+    ),
+    path(
+        "auth/logout/",
+        LogoutView.as_view(),
+        name="logout",
+    ),
+
+    # Workspaces
     path(
         "workspaces/",
         WorkspaceListCreateView.as_view(),
@@ -35,6 +42,8 @@ urlpatterns = [
         WorkspaceDetailView.as_view(),
         name="workspace-detail",
     ),
+
+    # Tasks
     path(
         "tasks/",
         TaskListCreateView.as_view(),
@@ -45,6 +54,8 @@ urlpatterns = [
         TaskDetailView.as_view(),
         name="task-detail",
     ),
+
+    # Notifications
     path(
         "notifications/",
         NotificationListView.as_view(),
