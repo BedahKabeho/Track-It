@@ -28,13 +28,13 @@ export const authApi = {
   login: (input: LoginInput) =>
     apiRequest<AuthResponse>(API_ENDPOINTS.auth.login, {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify({ username: input.email, password: input.password }),
     }),
 
   register: (input: RegisterInput) =>
     apiRequest<AuthResponse>(API_ENDPOINTS.auth.register, {
       method: "POST",
-      body: JSON.stringify(input),
+      body: JSON.stringify({ username: input.email, email: input.email, full_name: input.name, password: input.password }),
     }),
 
   logout: () =>
