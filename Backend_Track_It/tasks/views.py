@@ -1,12 +1,21 @@
-from django.shortcuts import render
 
-from rest_framework import viewsets, permissions
-from .models import Workspace, Task
-from .serializers import WorkspaceSerializer, TaskSerializer
-from rest_framework import generics, permissions, status
+from rest_framework import generics, permissions, status, viewsets
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from django.contrib.auth import get_user_model
 
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+
+from rest_framework import generics, permissions
+from rest_framework.exceptions import ValidationError
+
+from .models import Workspace, Task, Notification
+from .serializers import (
+    WorkspaceSerializer,
+    TaskSerializer,
+    NotificationSerializer,
+)
 User = get_user_model()
 
 class RegisterView(generics.CreateAPIView):
@@ -54,19 +63,6 @@ class WorkspaceViewSet(viewsets.ModelViewSet):
         if user.is_staff or getattr(user, 'role', '') == 'Admin':
             return Workspace.objects.all()
         return Workspace.objects.filter(user=user)
-from django.shortcuts import get_object_or_404
-from django.utils import timezone
-
-from rest_framework import generics, permissions
-from rest_framework.exceptions import ValidationError
-
-from .models import Workspace, Task, Notification
-from .serializers import (
-    WorkspaceSerializer,
-    TaskSerializer,
-    NotificationSerializer,
-)
-
 
 class WorkspaceListCreateView(generics.ListCreateAPIView):
     serializer_class = WorkspaceSerializer
@@ -188,6 +184,5 @@ class NotificationReadView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         serializer.save(read_at=timezone.now())
-
 
 
