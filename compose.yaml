@@ -1,31 +1,21 @@
 services:
-
   # PostgreSQL database service
   db:
-    # Use PostgreSQL version 15
     image: postgres:15
-
-    # Name of our database container
     container_name: trackit-db
-
-    # Restart the container unless manually stopped
     restart: unless-stopped
 
-    # Database configuration
     environment:
       POSTGRES_DB: trackitdb
       POSTGRES_USER: trackituser
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
 
-    # Port 5433 on Windows connects to port 5432 in Docker
     ports:
       - "5433:5432"
 
-    # Store database data permanently in a Docker volume
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
-    # Check whether PostgreSQL is ready
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U trackituser -d trackitdb"]
       interval: 5s
@@ -34,65 +24,30 @@ services:
 
   # Django backend service
   backend:
-    # Build the Docker image using our backend Dockerfile
     build:
       context: ./Backend_Track_It
 
-    # Name of our backend container
     container_name: trackit-backend
 
-    # Load environment variables from our .env file
     env_file:
       - .env
 
-    # Set database connection details for Django
     environment:
       POSTGRES_DB: trackitdb
       POSTGRES_USER: trackituser
       POSTGRES_HOST: db
       POSTGRES_PORT: 5432
 
-    # Port 8000 on Windows connects to port 8000 in Docker
     ports:
       - "8001:8000"
 
-    # Make our local backend files available in the container
     volumes:
       - ./Backend_Track_It:/app
 
-    # Start Django after PostgreSQL is ready
     depends_on:
       db:
         condition: service_healthy
 
-  # Next.js frontend service
-  frontend:
-    # Build the frontend image using its Dockerfile
-    build:
-      context: ./frontend
-
-    # Name our frontend container
-    container_name: trackit-frontend
-
-    # Make port 3000 accessible from our computer
-    ports:
-      - "3000:3000"
-
-    # Share frontend source code with the container
-    # Keep node_modules inside Docker rather than using Windows dependencies
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-
-    # Set the frontend development environment
-    environment:
-      NODE_ENV: development
-      WATCHPACK_POLLING: "true"
-
-    # Start the frontend after the backend has started
-    depends_on:
-      - backend        
-
-# Persistent storage for PostgreSQL
+# Persistent PostgreSQL storage
 volumes:
   postgres_data:
