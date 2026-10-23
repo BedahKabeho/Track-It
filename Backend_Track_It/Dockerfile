@@ -27,4 +27,4 @@ EXPOSE 8000
 # Start the Django development server when the container runs.
 # 0.0.0.0 allows Django to accept connections from outside the container.
 # Port 8000 is where our backend API will run.
-CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+CMD ["sh", "-c", "python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000"]
