@@ -112,3 +112,85 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.notification_type}: {self.task.title}"
+
+
+
+class UserActivity(models.Model):
+    class Action(models.TextChoices):
+        CREATED = "created", "Created"
+        UPDATED = "updated", "Updated"
+        DELETED = "deleted", "Deleted"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activities",
+    )
+
+    username = models.CharField(max_length=150)
+
+    action = models.CharField(
+        max_length=20,
+        choices=Action.choices,
+    )
+
+    task = models.ForeignKey(
+        "Task",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="activity_history",
+    )
+
+    task_id_snapshot = models.IntegerField(
+        null=True,
+        blank=True,
+    )
+
+    task_title = models.CharField(max_length=200)
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.username} {self.action} {self.task_title}"
+
+
+    
+class Role(models.Model):
+    class RoleName(models.TextChoices):
+        ADMIN = "Admin", "Admin"
+        USER = "User", "User"
+
+    name = models.CharField(
+        max_length=10,
+        choices=RoleName.choices,
+        unique=True
+    )
+
+    def __str__(self):
+        return self.name
+
+
+class UserRole(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="trackit_role"
+    )
+
+    role = models.ForeignKey(
+        Role,
+        on_delete=models.PROTECT,
+        related_name="users"
+    )
+
+    def __str__(self):
+        return f"{self.user.username} - {self.role.name}"
+
