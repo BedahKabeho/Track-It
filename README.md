@@ -1,3 +1,5 @@
+# Track-It
+A simple task tracking system developed using Next.js, Django, PostgreSQL and Docker.
 # Track It - Simple Task Tracker
 
 Track It is a web-based task management system.
