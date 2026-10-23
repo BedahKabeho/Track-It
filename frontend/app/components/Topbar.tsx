@@ -19,7 +19,7 @@ export default function Topbar({ title = "Home" }: { title?: string }) {
           </>
         ) : (
           <>
-            <Link href="/" aria-label="Back to home"><Icon name="home" size={14} /></Link>
+            <Link href="/dashboard" aria-label="Back to dashboard"><Icon name="home" size={14} /></Link>
             <span aria-hidden="true">/</span>
             <span aria-current="page">{title}</span>
           </>

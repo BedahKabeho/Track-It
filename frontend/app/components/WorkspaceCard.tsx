@@ -7,14 +7,10 @@ import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
 
 export default function WorkspaceCard({ workspace: w }: { workspace: Workspace }) {
-<<<<<<< Updated upstream
-  const percent = w.total ? Math.round((w.done / w.total) * 100) : 0;
-=======
   const { tasks } = useWorkspaceTasks(w.id);
   const done = tasks.filter((task) => task.status === "done").length;
   const total = tasks.length;
   const percent = total ? Math.round((done / total) * 100) : 0;
->>>>>>> Stashed changes
 
   return (
     <article className="card">

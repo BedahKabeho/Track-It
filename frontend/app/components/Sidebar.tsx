@@ -41,12 +41,12 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId }: {
 
   return (
     <aside className="sidebar">
-      <Link href="/" className="brand" aria-label="Trackitz home">
+      <Link href="/dashboard" className="brand" aria-label="TrackIt dashboard">
         <span className="brand-mark"><Icon name="check-square" size={16} strokeWidth={2.25} /></span>
         <span className="brand-name">TrackItz</span>
       </Link>
       <nav className="nav" aria-label="Main">
-        <Link href="/" className={`nav-item ${pathname === "/" ? "active" : ""}`} aria-current={pathname === "/" ? "page" : undefined}>
+        <Link href="/dashboard" className={`nav-item ${pathname === "/dashboard" ? "active" : ""}`} aria-current={pathname === "/dashboard" ? "page" : undefined}>
           <Icon name="home" /><span>Home</span>
         </Link>
         <Link href="/notifications" className={`nav-item ${pathname.startsWith("/notifications") ? "active" : ""}`} aria-current={pathname.startsWith("/notifications") ? "page" : undefined}>
