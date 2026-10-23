@@ -1,10 +1,20 @@
+"use client";
+
 import Link from "next/link";
 import type { Workspace } from "@/lib/data";
+import { useWorkspaceTasks } from "@/app/WorkspaceTasksProvider";
 import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
 
 export default function WorkspaceCard({ workspace: w }: { workspace: Workspace }) {
+<<<<<<< Updated upstream
   const percent = w.total ? Math.round((w.done / w.total) * 100) : 0;
+=======
+  const { tasks } = useWorkspaceTasks(w.id);
+  const done = tasks.filter((task) => task.status === "done").length;
+  const total = tasks.length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+>>>>>>> Stashed changes
 
   return (
     <article className="card">
@@ -17,12 +27,12 @@ export default function WorkspaceCard({ workspace: w }: { workspace: Workspace }
         </button>
       </div>
 
-      <h3 className="card-title">{w.name}</h3>
+      <h3 className="card-title"><Link className="card-title-link" href={`/workspaces/${w.id}`}>{w.name}</Link></h3>
       <p className="card-tagline">{w.tagline}</p>
 
       <div className="progress-row">
         <span>
-          {w.done} of {w.total} tasks complete
+          {done} of {total} tasks complete
         </span>
         <strong>{percent}%</strong>
       </div>
