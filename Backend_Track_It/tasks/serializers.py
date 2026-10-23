@@ -1,5 +1,6 @@
 
 from rest_framework import serializers
+from django.utils import timezone
 from .models import Workspace, Task, Notification
 
 
@@ -79,6 +80,12 @@ class TaskSerializer(serializers.ModelSerializer):
             )
 
         return workspace
+
+    def validate_due_date(self, value):
+        if value < timezone.now():
+            raise serializers.ValidationError("Due date cannot be in the past.")
+
+        return value
 
 
 class NotificationSerializer(serializers.ModelSerializer):

@@ -4,7 +4,7 @@ import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
 
 export default function WorkspaceCard({ workspace: w }: { workspace: Workspace }) {
-  const percent = Math.round((w.done / w.total) * 100);
+  const percent = w.total ? Math.round((w.done / w.total) * 100) : 0;
 
   return (
     <article className="card">

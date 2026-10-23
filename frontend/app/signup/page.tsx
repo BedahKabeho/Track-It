@@ -17,7 +17,7 @@ export default function SignupPage() {
           <p>Sign up to start organising your tasks and achieving your goals</p>
         </header>
         <SignupForm />
-        <p className="signup-login-link">Already have an account? <Link href="/login">Sign in</Link></p>
+        <p className="auth-switch">Already have an account? <Link href="/login">Sign in</Link></p>
       </section>
     </main>
   );
