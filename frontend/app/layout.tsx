@@ -3,8 +3,8 @@ import type { ReactNode } from "react";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Trackitz | Simple Task Tracker",
-  description: "Sign in to Trackitz and keep your tasks organised.",
+  title: "TrackItz",
+  description: "Organise your tasks and workspaces with TrackItz.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
