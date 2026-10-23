@@ -79,7 +79,7 @@ export default function SignupForm() {
       const profile = await apiRequest<{ user: Account }>("/api/auth/me/");
       setMessageType("success");
       setMessage("Account created successfully. You can now sign in.");
-      window.setTimeout(() => router.replace("/"), 700);
+      window.setTimeout(() => router.replace("/dashboard"), 700);
     } catch (error) {
       setMessageType("error");
       setMessage(error instanceof Error ? error.message : "Something went wrong. Please try again.");

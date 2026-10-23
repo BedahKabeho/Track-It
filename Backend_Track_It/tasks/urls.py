@@ -11,6 +11,7 @@ from .views import (
     TaskListCreateView,
     WorkspaceDetailView,
     WorkspaceListCreateView,
+    AdminTaskListView,
 )
 
 urlpatterns = [
@@ -24,4 +25,5 @@ urlpatterns = [
     path("tasks/<int:pk>/", TaskDetailView.as_view(), name="task-detail"),
     path("notifications/", NotificationListView.as_view(), name="notification-list"),
     path("notifications/<int:pk>/read/", NotificationReadView.as_view(), name="notification-read"),
+    path("admin/tasks/",AdminTaskListView.as_view(), name="admin-task-list",),
 ]

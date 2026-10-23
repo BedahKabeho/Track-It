@@ -4,8 +4,8 @@ import { WorkspaceTasksProvider } from "@/app/WorkspaceTasksProvider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "TrackItz",
-  description: "Organise your tasks and workspaces with TrackItz.",
+  title: "TrackIt",
+  description: "A little clarity for your day. Organise tasks and workspaces with TrackIt.",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {

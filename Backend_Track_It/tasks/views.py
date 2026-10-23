@@ -9,8 +9,9 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .permissions import IsTrackItAdmin
 
-from .models import Notification, Task, Workspace
+from .models import Notification, Task, Workspace, Role, UserRole
 from .serializers import NotificationSerializer, TaskSerializer, WorkspaceSerializer
 
 User = get_user_model()
@@ -46,16 +47,21 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"password": exc.messages}) from exc
         return attrs
 
+    
     def create(self, validated_data):
-        full_name = validated_data["full_name"].strip()
-        first_name, _, last_name = full_name.partition(" ")
-        return User.objects.create_user(
-            username=validated_data["email"],
-            email=validated_data["email"],
-            first_name=first_name,
-            last_name=last_name,
-            password=validated_data["password"],
-        )
+      full_name = validated_data["full_name"].strip()
+      first_name, _, last_name = full_name.partition(" ")
+
+      user = User.objects.create_user(
+        username=validated_data["email"],
+        email=validated_data["email"],
+        first_name=first_name,
+        last_name=last_name,
+        password=validated_data["password"],
+    )
+
+      return user
+
 
 
 class RegisterView(APIView):
@@ -170,3 +176,16 @@ class NotificationReadView(generics.UpdateAPIView):
 
     def perform_update(self, serializer):
         serializer.save(read_at=timezone.now())
+
+class AdminTaskListView(generics.ListAPIView):
+    serializer_class = TaskSerializer
+    permission_classes = [
+        permissions.IsAuthenticated,
+        IsTrackItAdmin,
+    ]
+
+    def get_queryset(self):
+        return Task.objects.select_related(
+            "workspace",
+            "workspace__user",
+        ).all()
