@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import { authApi } from "@/src/lib/api/auth";
 import { ApiError } from "@/src/lib/api/client";
 
@@ -12,7 +13,7 @@ function TaskPreview() {
   return <div className="devices" aria-label="Task tracking dashboard preview">
     <div className="laptop">
       <div className="laptop-screen"><div className="dash-sidebar"><b>◧ STT</b><span>▦ &nbsp;Dashboard</span><span className="selected">☷ &nbsp;My Tasks</span><span>▧ &nbsp;Projects</span><span>◷ &nbsp;Calendar</span><span>⚙ &nbsp;Settings</span><div className="side-user">● &nbsp; Alex Morgan</div></div>
-        <div className="dash-main"><div className="dash-top"><span>Welcome back, Alex 👋</span><span>🔔 &nbsp;●</span></div><div className="dash-title"><div><b>My Tasks</b><small>Keep track of your work</small></div><button>+ New Task</button></div><div className="dash-stats"><div><small>Total tasks</small><b>24</b><i>↗ 12%</i></div><div><small>In progress</small><b>08</b><i>↗ 4%</i></div><div><small>Completed</small><b>16</b><i>↗ 18%</i></div></div><div className="table-heading"><b>Recent tasks</b><span>View all →</span></div>
+        <div className="dash-main"><div className="dash-top"><span>Welcome back, Alex 👋</span><span>🔔 &nbsp;●</span></div><div className="dash-title"><div><b>My Tasks</b><small>Keep track of your work</small></div><button>+ New Task</button></div><div className="dash-stats"><div><small>Total tasks</small><b>24</b><i>↗ 12%</i></div><div><small>In progress</small><b>8</b><i>↗ 4%</i></div><div><small>Completed</small><b>16</b><i>↗ 18%</i></div></div><div className="table-heading"><b>Recent tasks</b><span>View all →</span></div>
           {[['Finalize project proposal','Today','In progress'],['Design landing page','Tomorrow','In progress'],['Review team feedback','Oct 24','Completed'],['Prepare monthly report','Oct 26','Pending'],['Update client presentation','Oct 28','Pending']].map(([name,date,status])=><div className="task-row" key={name}><span className="check-box"/><span>{name}</span><small>{date}</small><em className={status.toLowerCase().replace(' ','-')}>{status}</em></div>)}
         </div></div><div className="laptop-base" />
     </div>
@@ -23,6 +24,7 @@ function TaskPreview() {
 function GoogleMark() { return <svg className="google-mark" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M21.6 12.2c0-.7-.1-1.4-.2-2H12v3.8h5.4a4.6 4.6 0 0 1-2 3v2.5h3.2c1.9-1.8 3-4.3 3-7.3Z"/><path fill="#34A853" d="M12 22c2.7 0 5-.9 6.6-2.5l-3.2-2.5c-.9.6-2 1-3.4 1-2.6 0-4.8-1.7-5.6-4.1H3.1v2.6A10 10 0 0 0 12 22Z"/><path fill="#FBBC05" d="M6.4 13.9a6 6 0 0 1 0-3.8V7.5H3.1a10 10 0 0 0 0 9l3.3-2.6Z"/><path fill="#EA4335" d="M12 6c1.5 0 2.8.5 3.8 1.5l2.9-2.9A9.7 9.7 0 0 0 12 2a10 10 0 0 0-8.9 5.5l3.3 2.6C7.2 7.7 9.4 6 12 6Z"/></svg> }
 
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -35,7 +37,7 @@ export default function LoginPage() {
     setIsSubmitting(true);
     try {
       await authApi.login({ email, password });
-      setFeedback({ type: "success", message: "You are signed in." });
+      router.replace("/");
     } catch (error) {
       setFeedback({
         type: "error",

@@ -3,18 +3,18 @@ import { user, workspaces } from "@/lib/data";
 import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
 
-export default function Sidebar() {
+export default function Sidebar({ activeWorkspaceId }: { activeWorkspaceId?: string } = {}) {
   return (
     <aside className="sidebar">
-      <div className="brand">
+      <Link href="/" className="brand" aria-label="TrackItz home">
         <span className="brand-mark">
           <Icon name="check-square" size={16} strokeWidth={2.25} />
         </span>
         <span className="brand-name">TrackItz</span>
-      </div>
+      </Link>
 
       <nav className="nav" aria-label="Main">
-        <Link href="/" className="nav-item active" aria-current="page">
+        <Link href="/" className={`nav-item ${activeWorkspaceId ? "" : "active"}`} aria-current={!activeWorkspaceId ? "page" : undefined}>
           <Icon name="home" />
           <span>Home</span>
         </Link>
@@ -34,15 +34,11 @@ export default function Sidebar() {
 
       <nav className="nav" aria-label="Workspaces">
         {workspaces.map((w) => (
-          <Link key={w.id} href={`/workspaces/${w.id}`} className="nav-item">
+          <Link key={w.id} href={`/workspaces/${w.id}`} className={`nav-item ${activeWorkspaceId === w.id ? "active" : ""}`} aria-current={activeWorkspaceId === w.id ? "page" : undefined}>
             <WorkspaceIcon name={w.icon} />
             <span>{w.name}</span>
           </Link>
         ))}
-        <button className="nav-item muted">
-          <Icon name="plus" />
-          <span>New workspace</span>
-        </button>
       </nav>
 
       <div className="sidebar-bottom">

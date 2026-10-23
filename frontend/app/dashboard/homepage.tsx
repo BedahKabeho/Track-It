@@ -1,6 +1,6 @@
 import Sidebar from "@/app/components/Sidebar";
 import Topbar from "@/app/components/Topbar";
-import StatsCard from "@/app/components/StatsCard";
+import StatsCard, { type StatItem } from "@/app/components/StatsCard";
 import WorkspaceCard from "@/app/components/WorkspaceCard";
 import { user, workspaces } from "@/lib/data";
 import Icon from "@/app/components/Icon";
@@ -14,15 +14,38 @@ function greeting() {
   return "Good evening";
 }
 
-const pad = (n: number) => String(n).padStart(2, "0");
-
 export default function HomePage() {
+  const totalCompleted = workspaces.reduce((sum, w) => sum + w.done, 0);
+  const totalAllTasks = workspaces.reduce((sum, w) => sum + w.total, 0);
+  const totalCompletionRate = totalAllTasks ? Math.round((totalCompleted / totalAllTasks) * 100) : 0;
   const openTasks = workspaces.reduce((sum, w) => sum + (w.total - w.done), 0);
+  const dueToday = 2;
 
-  const stats = [
-    { value: pad(workspaces.length), label: "Active workspaces", note: "Separate spaces. Clear focus." },
-    { value: pad(openTasks), label: "Open tasks", note: "Across all your workspaces" },
-    { value: "02", label: "Due today", note: "Both in Website Development" },
+  const stats: StatItem[] = [
+    {
+      icon: "school",
+      label: "Active workspaces",
+      value: workspaces.length,
+      note: "Separate spaces. Clear focus.",
+    },
+    {
+      icon: "users",
+      label: "Open tasks",
+      value: openTasks,
+      note: "Across all your workspaces",
+    },
+    {
+      icon: "calendar",
+      label: "Due today",
+      value: dueToday,
+      note: "Both in Website Development",
+    },
+    {
+      icon: "check-circle",
+      label: "Completed tasks",
+      value: `${totalCompleted}/${totalAllTasks}`,
+      note: `${totalCompletionRate}% completion rate`,
+    },
   ];
 
   return (
