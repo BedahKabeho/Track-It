@@ -4,8 +4,56 @@ from datetime import datetime, time, timedelta
 from celery import shared_task
 from django.db import IntegrityError, transaction
 from django.utils import timezone
+from django.conf import settings
+from django.core.mail import send_mail
+from django.contrib.auth import get_user_model
 
 from .models import Task, Notification
+
+@shared_task(
+    bind=True,
+    max_retries=3,
+    default_retry_delay=60,
+)
+def send_notification_email(self, notification_id):
+    """Email a saved notification to its owner."""
+    try:
+        notification = (
+            Notification.objects
+            .select_related("user", "task")
+            .get(pk=notification_id)
+        )
+
+        recipient = notification.user.email
+        if not recipient:
+            return {
+                "status": "skipped",
+                "reason": "User has no email address",
+                "notification_id": notification_id,
+            }
+
+        send_mail(
+            subject=f"Track-It reminder: {notification.task.title}",
+            message=notification.message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[recipient],
+            fail_silently=False,
+        )
+
+        return {
+            "status": "sent",
+            "notification_id": notification_id,
+        }
+
+    except Notification.DoesNotExist:
+        return {
+            "status": "skipped",
+            "reason": "Notification no longer exists",
+            "notification_id": notification_id,
+        }
+
+    except Exception as exc:
+        raise self.retry(exc=exc)
 
 
 def latest_schedule_time(hours):
@@ -35,12 +83,17 @@ def create_notification(task, notification_type, message, scheduled_for):
     """Create a notification once per task, type, and scheduled time."""
     try:
         with transaction.atomic():
-            Notification.objects.create(
+            notification = Notification.objects.create(
                 user_id=task.workspace.user_id,
                 task=task,
                 notification_type=notification_type,
                 message=message,
                 scheduled_for=scheduled_for,
+            )
+
+            transaction.on_commit(
+                lambda notification_id=notification.pk:
+                    send_notification_email.dalay(notification_id)
             )
         return True
     except IntegrityError:
