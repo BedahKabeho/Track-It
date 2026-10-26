@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState, useSyncExternalStore, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiRequest, TOKEN_KEY } from "@/lib/api";
@@ -317,28 +317,49 @@ function GitHubMark() {
   );
 }
 
+function subscribeToLocation(callback: () => void) {
+  window.addEventListener("popstate", callback);
+  return () => window.removeEventListener("popstate", callback);
+}
+
+function getOAuthError() {
+  const oauthError = new URLSearchParams(window.location.search).get("oauth_error");
+  if (oauthError) return oauthError;
+  const hash = window.location.hash;
+  if (hash.startsWith("#token=") && !new URLSearchParams(hash.slice(1)).get("token")) {
+    return "missing_token";
+  }
+  return "";
+}
+
 export default function LoginPage() {
   const router = useRouter();
+  const oauthError = useSyncExternalStore(
+    subscribeToLocation,
+    getOAuthError,
+    () => "",
+  );
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
+  const oauthFeedback = oauthError
+    ? {
+      type: "error" as const,
+      message: oauthError === "account_exists"
+        ? "An account with this email already exists. Sign in with your existing method, then link Google or GitHub in Account settings."
+        : oauthError === "missing_token"
+          ? "Sign-in failed. Please try again."
+          : "Social sign-in failed. Please try again.",
+    }
+    : null;
+  const visibleFeedback = feedback ?? oauthFeedback;
 
   useEffect(() => {
     const hash = window.location.hash;
 
     if (!hash.startsWith("#token=")) {
-      const params = new URLSearchParams(window.location.search);
-
-      if (params.has("oauth_error")) {
-        setFeedback({
-          type: "error",
-          message: "Social sign-in failed. Please try again.",
-        });
-        window.history.replaceState(null, "", window.location.pathname);
-      }
-
       return;
     }
 
@@ -348,10 +369,6 @@ export default function LoginPage() {
     window.history.replaceState(null, "", window.location.pathname);
 
     if (!token) {
-      setFeedback({
-        type: "error",
-        message: "Sign-in failed. Please try again.",
-      });
       return;
     }
 
@@ -517,7 +534,7 @@ function handleGitHubLogin() {
             </button>
           </form>
 
-          {feedback && <p className={`login-feedback ${feedback.type}`} role="status">{feedback.message}</p>}
+          {visibleFeedback && <p className={`login-feedback ${visibleFeedback.type}`} role="status">{visibleFeedback.message}</p>}
 
           <p className="login-signup-prompt">
             Don&apos;t have an account? <Link href="/signup">Create one</Link>

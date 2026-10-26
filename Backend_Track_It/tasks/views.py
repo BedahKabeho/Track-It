@@ -1,3 +1,4 @@
+import logging
 import secrets
 
 from django.contrib.auth import get_user_model
@@ -32,6 +33,11 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from .models import SocialAccount
 from .oauth import oauth
 User = get_user_model()
+logger = logging.getLogger(__name__)
+
+
+class ExistingSocialAccountError(ValueError):
+    pass
 
 
 def user_payload(user):
@@ -325,7 +331,7 @@ def _get_or_create_social_user(provider, provider_id, email, name=""):
         if user:
             # Do not silently attach a social login to an existing
             # account solely because an email address matches.
-            raise ValueError(
+            raise ExistingSocialAccountError(
                 "An account with this email already exists. "
                 "Sign in using the existing account first."
             )
@@ -344,6 +350,7 @@ def _get_or_create_social_user(provider, provider_id, email, name=""):
         user = User.objects.create_user(
             username=username,
             email=email or "",
+            first_name=name[:150],
         )
 
         SocialAccount.objects.create(
@@ -356,6 +363,26 @@ def _get_or_create_social_user(provider, provider_id, email, name=""):
         return user
 
 
+def _link_social_account(user, provider, provider_id, email=""):
+    social_account = SocialAccount.objects.filter(
+        provider=provider,
+        provider_user_id=str(provider_id),
+    ).first()
+
+    if social_account and social_account.user_id != user.id:
+        raise ValueError("This provider account is already linked to another Track-It account.")
+
+    if social_account:
+        return social_account
+
+    return SocialAccount.objects.create(
+        user=user,
+        provider=provider,
+        provider_user_id=str(provider_id),
+        email=email or "",
+    )
+
+
 def _issue_social_token(user):
     token, _ = Token.objects.get_or_create(user=user)
     return token.key
@@ -363,6 +390,14 @@ def _issue_social_token(user):
 
 def _oauth_error_redirect():
     return redirect(f"{settings.FRONTEND_URL.rstrip('/')}/login?oauth_error=failed")
+
+
+def _social_link_redirect(provider, success):
+    result = "linked" if success else "failed"
+    return redirect(
+        f"{settings.FRONTEND_URL.rstrip('/')}/settings?"
+        f"social_{result}={provider}"
+    )
 
 
 def _google_verified_email(userinfo):
@@ -383,13 +418,41 @@ def _github_verified_email(client, token):
     return ""
 
 
-def _start_oauth(request, provider):
+def _oauth_client(provider):
     if provider == "google":
-        client = oauth.google
+        return oauth.google
+    if provider == "github":
+        return oauth.github
+    raise ValueError(f"Unsupported OAuth provider: {provider}")
+
+
+def _oauth_identity(client, token, provider):
+    if provider == "google":
+        profile = token.get("userinfo")
+        if not profile:
+            profile = await_google_userinfo(client, token)
+        provider_id = profile.get("sub")
+        email = _google_verified_email(profile)
+        name = profile.get("name", "")
     else:
-        client = oauth.github
+        response = client.get("user", token=token)
+        response.raise_for_status()
+        profile = response.json()
+        provider_id = profile.get("id")
+        email = _github_verified_email(client, token)
+        name = profile.get("login", "")
+
+    if not provider_id:
+        raise ValueError(f"{provider} did not return a user ID.")
+
+    return str(provider_id), email, name
+
+
+def _start_oauth(request, provider):
+    client = _oauth_client(provider)
 
     if not client.client_id or not client.client_secret:
+        logger.error("%s OAuth is missing client credentials", provider)
         return _oauth_error_redirect()
 
     return client.authorize_redirect(
@@ -398,31 +461,86 @@ def _start_oauth(request, provider):
     )
 
 
-def _finish_oauth(request, provider):
-    client = oauth.google if provider == "google" else oauth.github
+class SocialAccountsView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        providers = list(
+            SocialAccount.objects.filter(user=request.user)
+            .order_by("provider")
+            .values_list("provider", flat=True)
+        )
+        return Response({"providers": providers})
+
+
+class SocialAccountLinkTicketView(APIView):
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        provider = request.data.get("provider")
+        if provider not in (
+            SocialAccount.Provider.GOOGLE,
+            SocialAccount.Provider.GITHUB,
+        ):
+            return Response(
+                {"detail": "Choose Google or GitHub to link."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        ticket = signing.dumps(
+            {"user_id": request.user.pk, "provider": provider},
+            salt="social-account-link",
+        )
+        return Response({"ticket": ticket})
+
+
+def social_link_start(request, provider):
+    if provider not in (
+        SocialAccount.Provider.GOOGLE,
+        SocialAccount.Provider.GITHUB,
+    ):
+        return _social_link_redirect(provider, success=False)
 
     try:
+        client = _oauth_client(provider)
+        ticket = signing.loads(
+            request.GET.get("ticket", ""),
+            salt="social-account-link",
+            max_age=600,
+        )
+        if ticket.get("provider") != provider:
+            raise signing.BadSignature("Provider does not match link ticket.")
+        user = User.objects.get(pk=ticket["user_id"], is_active=True)
+    except (signing.BadSignature, signing.SignatureExpired, KeyError, User.DoesNotExist):
+        return _social_link_redirect(provider, success=False)
+
+    if not client.client_id or not client.client_secret:
+        logger.error("%s OAuth is missing client credentials", provider)
+        return _social_link_redirect(provider, success=False)
+
+    request.session[f"social-link-user:{provider}"] = user.pk
+    return client.authorize_redirect(
+        request,
+        _oauth_redirect_uri(request, provider),
+    )
+
+
+def social_sign_in(request, provider):
+    link_session_key = f"social-link-user:{provider}"
+    pending_user_id = request.session.get(link_session_key)
+
+    try:
+        client = _oauth_client(provider)
         token = client.authorize_access_token(request)
+        provider_id, email, name = _oauth_identity(client, token, provider)
 
-        if provider == "google":
-            userinfo = token.get("userinfo")
-            if not userinfo:
-                userinfo = await_google_userinfo(client, token)
-
-            provider_id = userinfo.get("sub")
-            email = _google_verified_email(userinfo)
-            name = userinfo.get("name", "")
-        else:
-            response = client.get("user", token=token)
-            response.raise_for_status()
-            profile = response.json()
-
-            provider_id = profile.get("id")
-            email = _github_verified_email(client, token)
-            name = profile.get("login", "")
-
-        if not provider_id:
-            raise ValueError("The provider did not return a user ID.")
+        if pending_user_id is not None:
+            request.session.pop(link_session_key, None)
+            user = User.objects.get(pk=pending_user_id, is_active=True)
+            _link_social_account(user, provider, provider_id, email)
+            return _social_link_redirect(provider, success=True)
 
         user = _get_or_create_social_user(
             provider,
@@ -432,7 +550,18 @@ def _finish_oauth(request, provider):
         )
         return _frontend_token_redirect(_issue_social_token(user))
 
-    except Exception:
+    except Exception as error:
+        if isinstance(error, ExistingSocialAccountError):
+            logger.info("%s OAuth sign-in matched an existing account", provider)
+            return redirect(
+                f"{settings.FRONTEND_URL.rstrip('/')}/login"
+                "?oauth_error=account_exists"
+            )
+        if pending_user_id is not None:
+            logger.exception("%s account linking failed", provider)
+            request.session.pop(link_session_key, None)
+            return _social_link_redirect(provider, success=False)
+        logger.exception("%s OAuth callback failed", provider)
         return _oauth_error_redirect()
 
 
@@ -447,7 +576,7 @@ def google_login(request):
 
 
 def google_callback(request):
-    return _finish_oauth(request, "google")
+    return social_sign_in(request, "google")
 
 
 def github_login(request):
@@ -455,7 +584,7 @@ def github_login(request):
 
 
 def github_callback(request):
-    return _finish_oauth(request, "github")
+    return social_sign_in(request, "github")
 class AdminTaskDetailView(generics.RetrieveDestroyAPIView):
     serializer_class = AdminTaskSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdminRole]

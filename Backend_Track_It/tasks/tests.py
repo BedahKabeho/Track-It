@@ -1,8 +1,9 @@
 from datetime import timedelta
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+from django.http import HttpResponseRedirect
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
 from rest_framework.test import APIClient
@@ -13,10 +14,211 @@ from .admin import (
     demote_trackit_user,
     promote_trackit_admin,
 )
-from .models import Role, Task, UserRole, Workspace
+from .models import Role, SocialAccount, Task, UserRole, Workspace
+from .views import github_callback, google_callback
 
 
 User = get_user_model()
+
+
+class SocialSignInTests(TestCase):
+    def setUp(self):
+        self.request = RequestFactory().get("/api/auth/provider/callback/")
+        self.request.session = {}
+
+    @patch("tasks.views.oauth")
+    def test_google_callback_creates_user_and_returns_auth_token(self, oauth_mock):
+        google = Mock()
+        google.authorize_access_token.return_value = {
+            "userinfo": {
+                "sub": "google-user-123",
+                "email": "google@example.com",
+                "email_verified": True,
+                "name": "Google User",
+            }
+        }
+        oauth_mock.google = google
+
+        response = google_callback(self.request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login#token=", response["Location"])
+        user = User.objects.get(email="google@example.com")
+        self.assertTrue(user.auth_token.key)
+        self.assertTrue(
+            SocialAccount.objects.filter(
+                user=user,
+                provider=SocialAccount.Provider.GOOGLE,
+                provider_user_id="google-user-123",
+            ).exists()
+        )
+
+    @patch("tasks.views.oauth")
+    def test_github_callback_creates_user_and_returns_auth_token(self, oauth_mock):
+        github = Mock()
+        github.authorize_access_token.return_value = {"access_token": "provider-token"}
+        profile_response = Mock()
+        profile_response.json.return_value = {
+            "id": 456,
+            "login": "github-user",
+        }
+        email_response = Mock()
+        email_response.json.return_value = [
+            {
+                "email": "github@example.com",
+                "primary": True,
+                "verified": True,
+            }
+        ]
+        github.get.side_effect = [profile_response, email_response]
+        oauth_mock.github = github
+
+        response = github_callback(self.request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("/login#token=", response["Location"])
+        user = User.objects.get(email="github@example.com")
+        self.assertTrue(user.auth_token.key)
+        self.assertTrue(
+            SocialAccount.objects.filter(
+                user=user,
+                provider=SocialAccount.Provider.GITHUB,
+                provider_user_id="456",
+            ).exists()
+        )
+
+    def test_existing_email_sign_in_returns_account_exists_error(self):
+        User.objects.create_user(
+            username="existing@example.com",
+            email="existing@example.com",
+            password="Safe-test-password-42!",
+        )
+        google = Mock()
+        google.authorize_access_token.return_value = {
+            "userinfo": {
+                "sub": "google-existing-user",
+                "email": "existing@example.com",
+                "email_verified": True,
+            }
+        }
+
+        with patch("tasks.views.oauth") as oauth_mock:
+            oauth_mock.google = google
+            response = google_callback(self.request)
+
+        self.assertEqual(response.status_code, 302)
+        self.assertIn("oauth_error=account_exists", response["Location"])
+
+    def test_signed_in_user_can_link_google_account(self):
+        user = User.objects.create_user(
+            username="existing@example.com",
+            email="existing@example.com",
+            password="Safe-test-password-42!",
+        )
+        client = APIClient()
+        client.force_authenticate(user)
+
+        ticket_response = client.post(
+            "/api/auth/social-accounts/link-ticket/",
+            {"provider": SocialAccount.Provider.GOOGLE},
+            format="json",
+        )
+        self.assertEqual(ticket_response.status_code, 200)
+
+        google = Mock()
+        google.client_id = "google-client-id"
+        google.client_secret = "google-client-secret"
+        google.authorize_redirect.return_value = HttpResponseRedirect(
+            "https://accounts.google.com/o/oauth2/auth"
+        )
+        google.authorize_access_token.return_value = {
+            "userinfo": {
+                "sub": "google-existing-user",
+                "email": "existing@example.com",
+                "email_verified": True,
+            }
+        }
+
+        with patch("tasks.views.oauth") as oauth_mock:
+            oauth_mock.google = google
+            start_response = client.get(
+                f"/api/auth/google/link/?ticket={ticket_response.data['ticket']}"
+            )
+            callback_response = client.get(
+                "/api/auth/google/callback/?code=oauth-code&state=oauth-state"
+            )
+
+        self.assertEqual(start_response.status_code, 302)
+        self.assertEqual(callback_response.status_code, 302)
+        self.assertIn("social_linked=google", callback_response["Location"])
+        self.assertTrue(
+            SocialAccount.objects.filter(
+                user=user,
+                provider=SocialAccount.Provider.GOOGLE,
+                provider_user_id="google-existing-user",
+            ).exists()
+        )
+
+    def test_signed_in_user_can_link_github_account(self):
+        user = User.objects.create_user(
+            username="github@example.com",
+            email="github@example.com",
+            password="Safe-test-password-42!",
+        )
+        client = APIClient()
+        client.force_authenticate(user)
+        ticket_response = client.post(
+            "/api/auth/social-accounts/link-ticket/",
+            {"provider": SocialAccount.Provider.GITHUB},
+            format="json",
+        )
+        github = Mock()
+        github.client_id = "github-client-id"
+        github.client_secret = "github-client-secret"
+        github.authorize_redirect.return_value = HttpResponseRedirect(
+            "https://github.com/login/oauth/authorize"
+        )
+        github.authorize_access_token.return_value = {"access_token": "provider-token"}
+        profile_response = Mock()
+        profile_response.json.return_value = {"id": 789, "login": "github-user"}
+        email_response = Mock()
+        email_response.json.return_value = [
+            {
+                "email": "github@example.com",
+                "primary": True,
+                "verified": True,
+            }
+        ]
+        github.get.side_effect = [profile_response, email_response]
+
+        with patch("tasks.views.oauth") as oauth_mock:
+            oauth_mock.github = github
+            start_response = client.get(
+                f"/api/auth/github/link/?ticket={ticket_response.data['ticket']}"
+            )
+            callback_response = client.get(
+                "/api/auth/github/callback/?code=oauth-code&state=oauth-state"
+            )
+
+        self.assertEqual(start_response.status_code, 302)
+        self.assertEqual(callback_response.status_code, 302)
+        self.assertIn("social_linked=github", callback_response["Location"])
+        self.assertTrue(
+            SocialAccount.objects.filter(
+                user=user,
+                provider=SocialAccount.Provider.GITHUB,
+                provider_user_id="789",
+            ).exists()
+        )
+
+    def test_link_ticket_requires_authentication(self):
+        response = APIClient().post(
+            "/api/auth/social-accounts/link-ticket/",
+            {"provider": SocialAccount.Provider.GOOGLE},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 401)
 
 
 class RoleAccessTests(TestCase):
