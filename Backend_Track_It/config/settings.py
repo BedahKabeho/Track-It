@@ -13,6 +13,7 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 from celery.schedules import crontab
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -22,12 +23,19 @@ load_dotenv(BASE_DIR.parent / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev-only-change-me')
+IS_RENDER = os.getenv("RENDER") == "true"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DJANGO_DEBUG', 'true').lower() == 'true'
+SECRET_KEY = os.environ.get("SECRET_KEY", "local-development-only-key")
+if IS_RENDER and "SECRET_KEY" not in os.environ:
+    raise RuntimeError("SECRET_KEY must be set in production")
 
-ALLOWED_HOSTS = os.getenv('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1,backend').split(',')
+DEBUG = not IS_RENDER
+
+ALLOWED_HOSTS = (
+    [".onrender.com"]
+    if IS_RENDER
+    else ["localhost", "127.0.0.1"]
+)
 
 
 # Application definition
@@ -55,13 +63,16 @@ REST_FRAMEWORK = {
 }
 
 MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
+    'django.middleware.security.SecurityMiddleware'
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    ''
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -88,14 +99,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # https://docs.djangoproject.com/en/6.1/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'trackitdb'),
-        'USER': os.getenv('POSTGRES_USER', 'trackituser'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', 'trackit-dev-password'),
-        'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-        'PORT': os.getenv('POSTGRES_PORT', '5433'),
-    }
+    "default": dj_database_url.config(
+        default=(
+            f"postgresql://{os.getenv('POSTGRES_USER', 'trackituser')}:"
+            f"{os.getenv('POSTGRES_PASSWORD', 'trackit-dev-password')}@"
+            f"{os.getenv('POSTGRES_HOST', 'localhost')}:"
+            f"{os.getenv('POSTGRES_PORT', '5433')}/"
+            f"{os.getenv('POSTGRES_DB', 'trackitdb')}"
+        ),
+        conn_max_age=0,
+        conn_health_checks=True,
+        ssl_require=bool(os.getenv("DATABASE_URL") and os.getenv("RENDER")),
+    )
 }
 
 
@@ -134,7 +149,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
+if IS_RENDER:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # Email
 # https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration

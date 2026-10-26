@@ -8,3 +8,7 @@ sqlparse==0.6.0
 tzdata==2026.5
 celery
 redis
+dj-database-url
+gunicorn
+whitenoise
+django-cors-headers
