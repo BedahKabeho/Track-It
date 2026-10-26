@@ -32,7 +32,9 @@ export type AdminUser = {
   full_name: string;
   email: string;
   is_active: boolean;
+  role: "ADMIN" | "USER";
   is_admin: boolean;
+  is_superuser: boolean;
   date_joined: string;
   last_login: string | null;
   workspace_count: number;
@@ -48,6 +50,15 @@ export function getAdminUsers(search = "") {
   if (search.trim()) params.set("search", search.trim());
   const query = params.toString();
   return apiRequest<AdminUser[]>(`/api/admin/users/${query ? `?${query}` : ""}`);
+}
+
+export function setAdminUserRole(userId: number, role: "ADMIN" | "USER") {
+  return apiRequest<{
+    user: Pick<AdminUser, "id" | "role" | "is_admin" | "is_superuser">;
+  }>(`/api/admin/users/${userId}/role/`, {
+    method: "PATCH",
+    body: JSON.stringify({ role }),
+  });
 }
 
 export function getAdminTasks(filters: AdminTaskFilters = {}) {
