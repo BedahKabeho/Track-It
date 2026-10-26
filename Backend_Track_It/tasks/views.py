@@ -1,3 +1,5 @@
+import secrets
+
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
@@ -20,7 +22,15 @@ from .permissions import (
     has_admin_role,
 )
 from .serializers import AdminTaskSerializer, AdminUserSerializer, NotificationSerializer, TaskSerializer, WorkspaceSerializer
-
+from django.conf import settings
+from django.contrib.auth import get_user_model
+from django.core import signing
+from django.db import transaction
+from django.shortcuts import redirect
+from django.urls import reverse
+from django.utils.http import url_has_allowed_host_and_scheme
+from .models import SocialAccount
+from .oauth import oauth
 User = get_user_model()
 
 
@@ -279,3 +289,170 @@ class AdminTaskListView(generics.ListAPIView):
                 | Q(workspace__user__email__icontains=search)
             )
         return queryset
+
+
+def _oauth_redirect_uri(request, provider):
+    return request.build_absolute_uri(
+        reverse(f"oauth-{provider}-callback")
+    )
+
+
+def _frontend_token_redirect(token):
+    # URL fragment is not sent in the HTTP request to the server.
+    return redirect(f"{settings.FRONTEND_URL.rstrip('/')}/login#token={token}")
+
+
+def _get_or_create_social_user(provider, provider_id, email, name=""):
+    User = get_user_model()
+
+    with transaction.atomic():
+        social_account = (
+            SocialAccount.objects.select_related("user")
+            .filter(provider=provider, provider_user_id=str(provider_id))
+            .first()
+        )
+
+        if social_account:
+            return social_account.user
+
+        # Only link an existing account when the provider supplied
+        # a verified email address.
+        if email:
+            user = User.objects.filter(email__iexact=email).first()
+        else:
+            user = None
+
+        if user:
+            # Do not silently attach a social login to an existing
+            # account solely because an email address matches.
+            raise ValueError(
+                "An account with this email already exists. "
+                "Sign in using the existing account first."
+            )
+
+        username_base = (email.split("@")[0] if email else name) or provider
+        username_base = "".join(
+            c for c in username_base if c.isalnum() or c in "._-"
+        )[:120] or provider
+
+        username = username_base
+        suffix = 1
+        while User.objects.filter(username=username).exists():
+            username = f"{username_base[:110]}_{suffix}"
+            suffix += 1
+
+        user = User.objects.create_user(
+            username=username,
+            email=email or "",
+        )
+
+        SocialAccount.objects.create(
+            user=user,
+            provider=provider,
+            provider_user_id=str(provider_id),
+            email=email or "",
+        )
+
+        return user
+
+
+def _issue_social_token(user):
+    token, _ = Token.objects.get_or_create(user=user)
+    return token.key
+
+
+def _oauth_error_redirect():
+    return redirect(f"{settings.FRONTEND_URL.rstrip('/')}/login?oauth_error=failed")
+
+
+def _google_verified_email(userinfo):
+    email = userinfo.get("email", "")
+    verified = userinfo.get("email_verified", False)
+    return email if email and verified else ""
+
+
+def _github_verified_email(client, token):
+    response = client.get("user/emails", token=token)
+    response.raise_for_status()
+
+    emails = response.json()
+    for item in emails:
+        if item.get("primary") and item.get("verified"):
+            return item.get("email", "")
+
+    return ""
+
+
+def _start_oauth(request, provider):
+    if provider == "google":
+        client = oauth.google
+    else:
+        client = oauth.github
+
+    if not client.client_id or not client.client_secret:
+        return _oauth_error_redirect()
+
+    return client.authorize_redirect(
+        request,
+        _oauth_redirect_uri(request, provider),
+    )
+
+
+def _finish_oauth(request, provider):
+    client = oauth.google if provider == "google" else oauth.github
+
+    try:
+        token = client.authorize_access_token(request)
+
+        if provider == "google":
+            userinfo = token.get("userinfo")
+            if not userinfo:
+                userinfo = await_google_userinfo(client, token)
+
+            provider_id = userinfo.get("sub")
+            email = _google_verified_email(userinfo)
+            name = userinfo.get("name", "")
+        else:
+            response = client.get("user", token=token)
+            response.raise_for_status()
+            profile = response.json()
+
+            provider_id = profile.get("id")
+            email = _github_verified_email(client, token)
+            name = profile.get("login", "")
+
+        if not provider_id:
+            raise ValueError("The provider did not return a user ID.")
+
+        user = _get_or_create_social_user(
+            provider,
+            provider_id,
+            email,
+            name,
+        )
+        return _frontend_token_redirect(_issue_social_token(user))
+
+    except Exception:
+        return _oauth_error_redirect()
+
+
+def await_google_userinfo(client, token):
+    response = client.get("userinfo", token=token)
+    response.raise_for_status()
+    return response.json()
+
+
+def google_login(request):
+    return _start_oauth(request, "google")
+
+
+def google_callback(request):
+    return _finish_oauth(request, "google")
+
+
+def github_login(request):
+    return _start_oauth(request, "github")
+
+
+def github_callback(request):
+    return _finish_oauth(request, "github")

@@ -14,6 +14,10 @@ from .views import (
     TaskListCreateView,
     WorkspaceDetailView,
     WorkspaceListCreateView,
+    google_login,
+    google_callback,
+    github_login,
+    github_callback,
 )
 
 urlpatterns = [
@@ -31,4 +35,8 @@ urlpatterns = [
     path("tasks/<int:pk>/", TaskDetailView.as_view(), name="task-detail"),
     path("notifications/", NotificationListView.as_view(), name="notification-list"),
     path("notifications/<int:pk>/read/", NotificationReadView.as_view(), name="notification-read"),
+    path("auth/google/", google_login, name="oauth-google-login"),
+    path("auth/google/callback/", google_callback, name="oauth-google-callback"),
+    path("auth/github/", github_login, name="oauth-github-login"),
+    path("auth/github/callback/",github_callback, name="oauth-github-callback"),
 ]

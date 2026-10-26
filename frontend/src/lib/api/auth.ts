@@ -26,17 +26,13 @@ export interface AuthResponse {
 
 export const authApi = {
   login: (input: LoginInput) =>
-  apiRequest<{ token: string }>(
-    API_ENDPOINTS.auth.login,
-    {
+    apiRequest<{ token: string }>(API_ENDPOINTS.auth.login, {
       method: "POST",
       body: JSON.stringify({
         username: input.email,
         password: input.password,
       }),
-    },
-    false,
-  ),
+    }),
   register: (input: RegisterInput) =>
     apiRequest<AuthResponse>(API_ENDPOINTS.auth.register, {
       method: "POST",
