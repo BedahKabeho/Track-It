@@ -93,7 +93,7 @@ def create_notification(task, notification_type, message, scheduled_for):
 
             transaction.on_commit(
                 lambda notification_id=notification.pk:
-                    send_notification_email.dalay(notification_id)
+                    send_notification_email.delay(notification_id)
             )
         return True
     except IntegrityError:
@@ -103,7 +103,7 @@ def create_notification(task, notification_type, message, scheduled_for):
 
 @shared_task
 def send_upcoming_task_reminders():
-    """Run at 09:00 and 16:00 UTC."""
+    """Run at 09:00 and 16:00 Africa/Dar_es_Salaam time."""
     now = timezone.now()
     scheduled_for = latest_schedule_time([9, 16])
     end_time = now + timedelta(hours=48)
@@ -137,7 +137,7 @@ def send_upcoming_task_reminders():
 
 @shared_task
 def send_overdue_task_reminders():
-    """Run daily at 09:00 UTC."""
+    """Run daily at 09:00 Africa/Dar_es_Salaam time."""
     now = timezone.now()
     scheduled_for = latest_schedule_time([9])
 
