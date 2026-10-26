@@ -131,8 +131,8 @@ class AdminTaskSerializer(serializers.ModelSerializer):
             "created_at",
             "workspace",
             "workspace_name",
-            "user_name",
             "user_email",
+            "user_name",
         ]
 
     def get_user_name(self, task):
