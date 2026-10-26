@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { apiRequest, getToken, type Account } from "@/lib/api";
-import { getAdminStats, getAdminTasks, getAdminUsers, type AdminStats, type AdminTask, type AdminUser } from "@/lib/admin";
+import { getAdminStats, getAdminTasks, getAdminUsers, setAdminUserRole, type AdminStats, type AdminTask, type AdminUser } from "@/lib/admin";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import "./admin.css";
 
@@ -26,6 +27,7 @@ const statusLabels: Record<AdminTask["status"], string> = {
 };
 
 export default function AdminPage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<Account | null>(null);
   const [authorized, setAuthorized] = useState(false);
   const [stats, setStats] = useState<AdminStats | null>(null);
@@ -38,6 +40,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true);
   const [tasksLoading, setTasksLoading] = useState(false);
   const [usersLoading, setUsersLoading] = useState(false);
+  const [roleSavingUserId, setRoleSavingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -52,8 +55,7 @@ export default function AdminPage() {
         const me = await apiRequest<{ user: Account }>("/api/auth/me/");
         if (!active) return;
         if (!me.user.is_admin) {
-          setError("You do not have permission to view the admin dashboard.");
-          setLoading(false);
+          router.replace("/dashboard");
           return;
         }
         setProfile(me.user);
@@ -68,7 +70,25 @@ export default function AdminPage() {
     }
     void loadAdmin();
     return () => { active = false; };
-  }, []);
+  }, [router]);
+
+  async function changeUserRole(user: AdminUser) {
+    setRoleSavingUserId(user.id);
+    setError("");
+    try {
+      const { user: updatedUser } = await setAdminUserRole(
+        user.id,
+        user.is_admin ? "USER" : "ADMIN",
+      );
+      setUsers((current) => current.map((item) => item.id === user.id
+        ? { ...item, ...updatedUser }
+        : item));
+    } catch (roleError) {
+      setError(roleError instanceof Error ? roleError.message : "Could not update this user's role.");
+    } finally {
+      setRoleSavingUserId(null);
+    }
+  }
 
   useEffect(() => {
     if (!authorized || section !== "users") return;
@@ -168,13 +188,14 @@ export default function AdminPage() {
             {section === "users" ? (
               <>
                 <div className="admin-table-scroll"><table className="admin-table admin-user-table">
-                  <thead><tr><th>User</th><th>Access</th><th>Account</th><th>Workspaces</th><th>Tasks</th><th>Joined</th><th>Last active</th></tr></thead>
+                  <thead><tr><th>User</th><th>Access</th><th>Account</th><th>Workspaces</th><th>Tasks</th><th>Joined</th><th>Last active</th>{profile?.is_superuser && <th>Role management</th>}</tr></thead>
                   <tbody aria-busy={usersLoading}>
                     {users.map((user) => <tr key={user.id}>
                       <td><div className="admin-user"><span className="admin-avatar">{initials(user.full_name)}</span><span><strong>{user.full_name}</strong><small>{user.email || "No email provided"}</small></span></div></td>
-                      <td><span className={`admin-pill ${user.is_admin ? "admin" : "member"}`}>{user.is_admin ? "Administrator" : "Member"}</span></td>
+                      <td><span className={`admin-pill ${user.is_admin ? "admin" : "member"}`}>{user.is_superuser ? "Superadmin" : user.is_admin ? "Administrator" : "Member"}</span></td>
                       <td><span className={`admin-pill ${user.is_active ? "active" : "suspended"}`}>{user.is_active ? "Active" : "Inactive"}</span></td>
                       <td>{user.workspace_count}</td><td>{user.task_count}</td><td>{formatDate(user.date_joined)}</td><td>{formatLastLogin(user.last_login)}</td>
+                      {profile?.is_superuser && <td>{user.is_superuser ? "Managed in Django" : <button type="button" disabled={roleSavingUserId === user.id} onClick={() => void changeUserRole(user)}>{roleSavingUserId === user.id ? "Saving..." : user.is_admin ? "Demote to user" : "Promote to admin"}</button>}</td>}
                     </tr>)}
                   </tbody>
                 </table></div>
