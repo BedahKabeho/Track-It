@@ -24,18 +24,38 @@ function Brand() {
 function TaskPreview() {
   return (
     <div className="devices" aria-label="Task tracking dashboard preview">
-      {/* Plant */}
+      {/* Potted Plant */}
       <div className="mockup-plant" aria-hidden="true">
         <svg viewBox="0 0 100 240" fill="none" xmlns="http://www.w3.org/2000/svg">
-          {/* Plant Pot */}
-          <path d="M22 170 L78 170 L68 235 L32 235 Z" fill="#e8f3ef" />
-          <ellipse cx="50" cy="170" rx="28" ry="4" fill="#d7e7e2" />
+          <defs>
+            <linearGradient id="potGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="#ffffff" />
+              <stop offset="60%" stopColor="#f0f6f5" />
+              <stop offset="100%" stopColor="#d7e5e3" />
+            </linearGradient>
+            <linearGradient id="leafGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#5ec485" />
+              <stop offset="100%" stopColor="#2b7746" />
+            </linearGradient>
+            <linearGradient id="leafGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#48b273" />
+              <stop offset="100%" stopColor="#22643a" />
+            </linearGradient>
+            <linearGradient id="leafGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#369c5e" />
+              <stop offset="100%" stopColor="#1b542f" />
+            </linearGradient>
+          </defs>
+          {/* Ceramic Plant Pot */}
+          <path d="M22 170 L78 170 L69 236 L31 236 Z" fill="url(#potGrad)" />
+          <ellipse cx="50" cy="170" rx="28" ry="4.5" fill="#e2edeb" />
+          <ellipse cx="50" cy="171" rx="25" ry="3.2" fill="#584838" opacity="0.6" />
           {/* Leaves */}
-          <path d="M50 170 C45 130 18 90 8 50 C24 60 38 85 46 120" fill="#358b54" />
-          <path d="M48 170 C42 120 28 65 30 20 C40 38 48 70 50 115" fill="#449d62" />
-          <path d="M50 170 C50 110 52 50 62 8 C66 32 62 75 54 125" fill="#50ad6f" />
-          <path d="M52 170 C56 120 68 70 82 28 C80 48 74 80 60 130" fill="#429a60" />
-          <path d="M53 170 C62 135 80 95 96 68 C88 85 78 115 62 140" fill="#368c56" />
+          <path d="M50 170 C43 125 14 88 5 48 C22 58 37 84 46 122" fill="url(#leafGrad3)" />
+          <path d="M47 170 C40 115 25 60 27 15 C38 34 47 68 50 115" fill="url(#leafGrad1)" />
+          <path d="M50 170 C51 108 53 45 64 6 C68 30 63 72 54 125" fill="url(#leafGrad2)" />
+          <path d="M52 170 C57 118 70 65 85 24 C82 46 75 78 59 130" fill="url(#leafGrad1)" />
+          <path d="M54 170 C63 132 82 92 98 64 C90 82 79 114 62 142" fill="url(#leafGrad3)" />
         </svg>
       </div>
 
@@ -43,45 +63,54 @@ function TaskPreview() {
       <div className="mockup-laptop">
         <div className="mockup-laptop-screen">
           <span className="laptop-camera-dot" />
-          {/* Sidebar */}
+
+          {/* Laptop Sidebar */}
           <div className="mockup-dash-sidebar">
             <div className="mockup-dash-logo">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="18" height="18" rx="4" />
-                <polyline points="9 12 11 14 15 10" />
-              </svg>
-              <span>STT</span>
+              <span className="mockup-logo-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </span>
+              <span>TRACKITZ</span>
             </div>
-            <div className="mockup-nav-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
+
+            <div className="mockup-nav-item active">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                <polyline points="9 22 9 12 15 12 15 22" />
               </svg>
               <span>Dashboard</span>
             </div>
-            <div className="mockup-nav-item active">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <line x1="3" y1="6" x2="3.01" y2="6" />
-                <line x1="3" y1="12" x2="3.01" y2="12" />
-                <line x1="3" y1="18" x2="3.01" y2="18" />
+
+            <div className="mockup-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
               </svg>
               <span>My Tasks</span>
             </div>
+
             <div className="mockup-nav-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="9" />
                 <line x1="12" y1="8" x2="12" y2="16" />
                 <line x1="8" y1="12" x2="16" y2="12" />
               </svg>
               <span>Create Task</span>
             </div>
+
             <div className="mockup-nav-item">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polygon points="12 2 2 7 12 12 22 7 12 2" />
+                <polyline points="2 17 12 22 22 17" />
+                <polyline points="2 12 12 17 22 12" />
+              </svg>
+              <span>All Tasks (Admin)</span>
+            </div>
+
+            <div className="mockup-nav-item">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <circle cx="12" cy="12" r="3" />
                 <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
               </svg>
@@ -89,83 +118,100 @@ function TaskPreview() {
             </div>
           </div>
 
-          {/* Main Content Area */}
+          {/* Laptop Main Content Area */}
           <div className="mockup-dash-main">
-            <div className="mockup-dash-topbar">
-              <span className="mockup-dash-crumb">Workspace</span>
-              <div className="mockup-dash-user">
-                <span className="mockup-dash-user-avatar" />
-                <span>Alex Johnson</span>
+            {/* Top Toolbar */}
+            <div className="mockup-dash-headrow">
+              <div className="mockup-dash-title-left">
+                <h3>My Tasks</h3>
               </div>
-            </div>
-
-            <div className="mockup-dash-titlebar">
-              <h3>My Tasks</h3>
-              <span className="mockup-dash-new-btn">+ Create Task</span>
-            </div>
-
-            <div className="mockup-dash-stats">
-              <div className="mockup-stat-box">
-                <span className="stat-dot-box stat-cyan" />
-                <div>
-                  <small>Total Tasks</small>
-                  <strong>12</strong>
+              <div className="mockup-dash-actions-right">
+                <div className="mockup-search-box">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <circle cx="11" cy="11" r="8" />
+                    <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                  </svg>
+                  <span>Search tasks...</span>
                 </div>
-              </div>
-              <div className="mockup-stat-box">
-                <span className="stat-dot-box stat-teal" />
-                <div>
-                  <small>Completed</small>
-                  <strong>5</strong>
-                </div>
-              </div>
-              <div className="mockup-stat-box">
-                <span className="stat-dot-box stat-mint" />
-                <div>
-                  <small>In Progress</small>
-                  <strong>4</strong>
+                <button type="button" tabIndex={-1} className="mockup-new-btn">
+                  + Create Task
+                </button>
+                <div className="mockup-user-pill">
+                  <span className="mockup-avatar-circle" />
+                  <span>John Doe</span>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
                 </div>
               </div>
             </div>
 
+            {/* Filter Tabs */}
+            <div className="mockup-filter-tabs">
+              <span className="tab-pill active">All</span>
+              <span className="tab-pill">
+                <span className="pill-dot dot-pending" /> Pending
+              </span>
+              <span className="tab-pill">
+                <span className="pill-dot dot-inprog" /> In Progress
+              </span>
+              <span className="tab-pill">
+                <span className="pill-dot dot-done" /> Done
+              </span>
+            </div>
+
+            {/* Task Table */}
             <table className="mockup-dash-table">
               <thead>
                 <tr>
-                  <th>Task</th>
+                  <th>Title</th>
                   <th>Due Date</th>
                   <th>Status</th>
                 </tr>
               </thead>
               <tbody>
                 <tr>
-                  <td>Project documentation</td>
-                  <td>Oct 24, 2025</td>
-                  <td><span className="mockup-status-tag in-prog">&#9679; In Progress</span></td>
+                  <td className="table-title-cell">Finish project documentation</td>
+                  <td>Apr 25, 2025</td>
+                  <td>
+                    <span className="mockup-badge badge-pending">
+                      <span className="badge-dot" /> Pending
+                    </span>
+                  </td>
                 </tr>
                 <tr>
-                  <td>Design new landing page</td>
-                  <td>Oct 25, 2025</td>
-                  <td><span className="mockup-status-tag done">&#9679; Completed</span></td>
+                  <td className="table-title-cell">Build the API endpoints</td>
+                  <td>Apr 22, 2025</td>
+                  <td>
+                    <span className="mockup-badge badge-inprog">
+                      <span className="badge-dot" /> In Progress
+                    </span>
+                  </td>
                 </tr>
                 <tr>
-                  <td>Update API integration</td>
-                  <td>Oct 28, 2025</td>
-                  <td><span className="mockup-status-tag in-prog">&#9679; In Progress</span></td>
+                  <td className="table-title-cell">Design the frontend UI</td>
+                  <td>Apr 20, 2025</td>
+                  <td>
+                    <span className="mockup-badge badge-done">
+                      <span className="badge-dot" /> Done
+                    </span>
+                  </td>
                 </tr>
                 <tr>
-                  <td>Review team proposals</td>
-                  <td>Oct 28, 2025</td>
-                  <td><span className="mockup-status-tag pending">&#9679; Pending</span></td>
-                </tr>
-                <tr>
-                  <td>Write release notes</td>
-                  <td>Oct 29, 2025</td>
-                  <td><span className="mockup-status-tag done">&#9679; Completed</span></td>
+                  <td className="table-title-cell">Write test cases</td>
+                  <td>Apr 28, 2025</td>
+                  <td>
+                    <span className="mockup-badge badge-pending">
+                      <span className="badge-dot" /> Pending
+                    </span>
+                  </td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
+
+        {/* Laptop Metallic Base */}
         <div className="mockup-laptop-base" />
       </div>
 
@@ -173,61 +219,74 @@ function TaskPreview() {
       <div className="mockup-phone">
         <span className="phone-notch" />
         <div className="phone-topbar">
-          <span>9:41</span>
+          <span className="phone-clock">9:41</span>
           <div className="phone-topbar-icons">
-            <span>&#9642;&#9642;</span>
-            <span>&#9647;</span>
+            <svg viewBox="0 0 24 24" width="7" height="7" fill="currentColor">
+              <path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 19H19.65l-.62-1.39C20.26 16.07 21 14.12 21 12c0-4.97-4.03-9-9-9z" opacity="0.3" />
+              <path d="M12 6c-3.31 0-6 2.69-6 6 0 1.34.44 2.58 1.19 3.59L6.5 17h11l-.69-1.41C17.56 14.58 18 13.34 18 12c0-3.31-2.69-6-6-6z" />
+            </svg>
+            <span className="phone-batt">
+              <span className="batt-fill" />
+            </span>
           </div>
         </div>
+
         <div className="phone-header">
           <div className="phone-brand">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-              <rect x="3" y="3" width="18" height="18" rx="4" />
-              <polyline points="9 12 11 14 15 10" />
-            </svg>
-            <span>STT</span>
+            <span className="phone-logo-mark">
+              <svg viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 6 9 17 4 12" />
+              </svg>
+            </span>
+            <span>TrackItz</span>
           </div>
-          <span className="phone-menu-icon">&#9776;</span>
+          <span className="phone-menu-icon" aria-hidden="true">&#9776;</span>
         </div>
+
         <div className="phone-title-row">
           <h4>My Tasks</h4>
-          <span className="phone-toggle" />
+          <span className="phone-add-btn">+ Create Task</span>
         </div>
+
         <div className="phone-task-list">
           <div className="phone-task-item">
             <div className="phone-task-info">
-              <strong>Project documentation</strong>
-              <small>Oct 24, 2025</small>
+              <strong>Finish project documentation</strong>
+              <span className="phone-tag tag-pending">
+                <span className="phone-dot" /> Pending
+              </span>
             </div>
-            <span className="phone-status-tag in-prog">In Progress</span>
+            <span className="phone-chevron">&rsaquo;</span>
           </div>
+
           <div className="phone-task-item">
             <div className="phone-task-info">
-              <strong>Design new landing page</strong>
-              <small>Oct 25, 2025</small>
+              <strong>Build the API endpoints</strong>
+              <span className="phone-tag tag-inprog">
+                <span className="phone-dot" /> In Progress
+              </span>
             </div>
-            <span className="phone-status-tag done">Completed</span>
+            <span className="phone-chevron">&rsaquo;</span>
           </div>
+
           <div className="phone-task-item">
             <div className="phone-task-info">
-              <strong>Update API integration</strong>
-              <small>Oct 28, 2025</small>
+              <strong>Design the frontend UI</strong>
+              <span className="phone-tag tag-done">
+                <span className="phone-dot" /> Done
+              </span>
             </div>
-            <span className="phone-status-tag in-prog">In Progress</span>
+            <span className="phone-chevron">&rsaquo;</span>
           </div>
+
           <div className="phone-task-item">
             <div className="phone-task-info">
-              <strong>Review team proposals</strong>
-              <small>Oct 28, 2025</small>
+              <strong>Write test cases</strong>
+              <span className="phone-tag tag-pending">
+                <span className="phone-dot" /> Pending
+              </span>
             </div>
-            <span className="phone-status-tag pending">Pending</span>
-          </div>
-          <div className="phone-task-item">
-            <div className="phone-task-info">
-              <strong>Write release notes</strong>
-              <small>Oct 29, 2025</small>
-            </div>
-            <span className="phone-status-tag done">Completed</span>
+            <span className="phone-chevron">&rsaquo;</span>
           </div>
         </div>
       </div>
@@ -248,8 +307,12 @@ function GoogleMark() {
 
 function GitHubMark() {
   return (
-    <svg className="github-mark" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="currentColor" d="M12 .9a11.1 11.1 0 0 0-3.51 21.63c.56.1.76-.24.76-.54v-2.08c-3.1.67-3.76-1.31-3.76-1.31-.5-1.28-1.24-1.62-1.24-1.62-1.01-.69.08-.68.08-.68 1.12.08 1.71 1.15 1.71 1.15 1 .1.77 2.34 3.99 1.65.1-.72.4-1.21.72-1.49-2.48-.28-5.08-1.24-5.08-5.52 0-1.22.44-2.22 1.15-3-.12-.28-.5-1.42.11-2.95 0 0 .94-.3 3.05 1.15a10.6 10.6 0 0 1 5.55 0c2.12-1.44 3.05-1.15 3.05-1.15.61 1.53.23 2.67.12 2.95.72.78 1.15 1.78 1.15 3 0 4.3-2.61 5.23-5.1 5.5.4.35.76 1.02.76 2.06v3.05c0 .3.2.65.77.54A11.1 11.1 0 0 0 12 .9Z" />
+    <svg className="github-mark" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path
+        fillRule="evenodd"
+        clipRule="evenodd"
+        d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+      />
     </svg>
   );
 }
@@ -267,10 +330,14 @@ export default function LoginPage() {
     setFeedback(null);
     setIsSubmitting(true);
     try {
-      const result = await apiRequest<{ token: string }>("/api/auth/login/", {
-        method: "POST",
-        body: JSON.stringify({ username: email.trim(), password }),
-      }, false);
+      const result = await apiRequest<{ token: string }>(
+        "/api/auth/login/",
+        {
+          method: "POST",
+          body: JSON.stringify({ username: email.trim(), password }),
+        },
+        false
+      );
       window.localStorage.setItem(TOKEN_KEY, result.token);
       const { user } = await apiRequest<{ user: { is_admin?: boolean } }>("/api/auth/me/");
       router.replace(user.is_admin ? "/admin" : "/dashboard");
@@ -310,7 +377,14 @@ export default function LoginPage() {
                 Email Address <span className="req">*</span>
               </label>
               <div className="login-input-wrap">
-                <svg className="login-field-icon" viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  className="login-field-icon"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <rect x="3" y="5" width="18" height="14" rx="2" />
                   <polyline points="3 7 12 13 21 7" />
                 </svg>
@@ -331,7 +405,14 @@ export default function LoginPage() {
                 Password <span className="req">*</span>
               </label>
               <div className="login-input-wrap">
-                <svg className="login-field-icon" viewBox="0 0 24 24" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <svg
+                  className="login-field-icon"
+                  viewBox="0 0 24 24"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
                   <rect x="4" y="10" width="16" height="11" rx="2" />
                   <path d="M8 10V7a4 4 0 1 1 8 0v3" />
                 </svg>
@@ -367,9 +448,9 @@ export default function LoginPage() {
 
             <button className="login-submit-btn" type="submit" disabled={isSubmitting}>
               <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M14 4h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-4" />
-                <polyline points="10 16 15 12 10 8" />
-                <line x1="15" y1="12" x2="4" y2="12" />
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
               <span>{isSubmitting ? "Signing In..." : "Sign In"}</span>
             </button>
@@ -399,6 +480,7 @@ export default function LoginPage() {
           <span>&#169; 2026 TrackItz. All rights reserved.</span>
           <div className="login-footer-links">
             <a href="#privacy">Privacy Policy</a>
+            <span className="footer-link-divider">|</span>
             <a href="#terms">Terms &amp; Conditions</a>
           </div>
         </footer>
@@ -415,13 +497,30 @@ export default function LoginPage() {
 
       {/* Right Column: Hero Panel */}
       <section className="hero-panel">
-        <div className="hero-copy">
-          <span className="hero-eyebrow">TRACKITZ</span>
-          <h2>Stay Organised,<br />Get More Done</h2>
-          <p>TrackItz helps you manage your tasks, stay focused, and achieve your goals. Create, track and update your tasks with ease - anytime, anywhere.</p>
+        {/* Subtle decorative curved ambient SVG background */}
+        <div className="hero-ambient-waves" aria-hidden="true">
+          <svg viewBox="0 0 800 900" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
+            <circle cx="750" cy="120" r="350" fill="#20747e" fillOpacity="0.18" />
+            <circle cx="780" cy="800" r="420" fill="#13525b" fillOpacity="0.35" />
+            <path d="M-100 480 Q 200 320 500 520 T 900 420" stroke="#368c95" strokeWidth="1.2" strokeOpacity="0.2" fill="none" />
+            <path d="M-60 520 Q 240 360 540 560 T 940 460" stroke="#48a0a9" strokeWidth="1" strokeOpacity="0.15" fill="none" />
+          </svg>
         </div>
 
-        <TaskPreview />
+        <div className="hero-content-wrap">
+          <div className="hero-copy">
+            <div className="hero-eyebrow">
+              
+              <span className="eyebrow-line" />
+            </div>
+            <h2>Stay Organised,<br />Get More Done</h2>
+            <p>
+              TrackItz helps you manage your tasks, stay focused and achieve your goals. Create, track and update your tasks with ease — anytime, anywhere.
+            </p>
+          </div>
+
+          <TaskPreview />
+        </div>
       </section>
     </main>
   );
