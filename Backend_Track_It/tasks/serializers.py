@@ -144,6 +144,8 @@ class AdminTaskSerializer(serializers.ModelSerializer):
 class AdminUserSerializer(serializers.ModelSerializer):
     full_name = serializers.SerializerMethodField()
     is_admin = serializers.SerializerMethodField()
+    role = serializers.SerializerMethodField()
+    is_superuser = serializers.BooleanField(read_only=True)
     workspace_count = serializers.IntegerField(read_only=True)
     task_count = serializers.IntegerField(read_only=True)
 
@@ -154,7 +156,9 @@ class AdminUserSerializer(serializers.ModelSerializer):
             "full_name",
             "email",
             "is_active",
+            "role",
             "is_admin",
+            "is_superuser",
             "date_joined",
             "last_login",
             "workspace_count",
@@ -166,4 +170,7 @@ class AdminUserSerializer(serializers.ModelSerializer):
         return full_name or user.get_username()
 
     def get_is_admin(self, user):
-        return bool(user.is_staff or user.is_superuser or getattr(user, "admin_role", False))
+        return bool(user.is_superuser or getattr(user, "admin_role", False))
+
+    def get_role(self, user):
+        return "ADMIN" if self.get_is_admin(user) else "USER"
