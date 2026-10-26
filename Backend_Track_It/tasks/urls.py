@@ -2,6 +2,7 @@ from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
 from .views import (
     AdminStatsView,
+    AdminTaskDetailView,
     AdminTaskListView,
     AdminUserListView,
     AdminUserRoleUpdateView,
@@ -29,6 +30,7 @@ urlpatterns = [
     path("admin/users/", AdminUserListView.as_view(), name="admin-users"),
     path("admin/users/<int:user_id>/role/", AdminUserRoleUpdateView.as_view(), name="admin-user-role"),
     path("admin/tasks/", AdminTaskListView.as_view(), name="admin-tasks"),
+    path("admin/tasks/<int:pk>/", AdminTaskDetailView.as_view(), name="admin-task-detail"),
     path("workspaces/", WorkspaceListCreateView.as_view(), name="workspace-list-create"),
     path("workspaces/<int:pk>/", WorkspaceDetailView.as_view(), name="workspace-detail"),
     path("tasks/", TaskListCreateView.as_view(), name="task-list-create"),

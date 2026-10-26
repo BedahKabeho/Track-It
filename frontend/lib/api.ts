@@ -30,7 +30,7 @@ export type TaskRecord = {
 
 export type NotificationRecord = {
   id: number;
-  task: number;
+  task: number | null;
   notification_type: string;
   message: string;
   scheduled_for: string | null;

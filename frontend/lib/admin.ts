@@ -68,3 +68,7 @@ export function getAdminTasks(filters: AdminTaskFilters = {}) {
   const query = params.toString();
   return apiRequest<AdminTask[]>(`/api/admin/tasks/${query ? `?${query}` : ""}`);
 }
+
+export function deleteAdminTask(id: number) {
+  return apiRequest<void>(`/api/admin/tasks/${id}/`, { method: "DELETE" });
+}

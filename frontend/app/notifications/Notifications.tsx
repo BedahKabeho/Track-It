@@ -55,7 +55,7 @@ export default function Notifications() {
     <section className="dashboard-welcome"><h1>Sign in required</h1><p className="sub">Sign in to view your notifications.</p><Link className="btn-primary" href="/login">Sign in</Link></section>
   ) : loading ? <p className="dashboard-state">Loading notifications…</p> : error && !notifications.length ? <p aria-live="polite" className="dashboard-state error">{error}</p> : (
     <>
-      <div className="hero"><div><p className="eyebrow">Stay up to date</p><h1>Notifications</h1><p className="sub">Reminders and updates for your tasks.</p></div></div>
+      <div className="hero"><div><p className="eyebrow">Stay up to date</p><h1 className="home-greeting">Notifications</h1><p className="sub">Reminders and updates for your tasks.</p></div></div>
       {notifications.length ? <div className="notification-list">
         {notifications.map((notification) => (
           <article className={`notification-item ${notification.read_at ? "read" : "unread"}`} key={notification.id}>

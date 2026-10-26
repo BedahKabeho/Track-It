@@ -13,18 +13,7 @@ export default function Topbar({ title = "Home" }: { title?: string }) {
   return (
     <header className="topbar">
       <div className="crumb">
-        {title === "Home" ? (
-          <>
-            <Icon name="home" size={14} />
-            <span>Home</span>
-          </>
-        ) : (
-          <>
-            <Link href="/dashboard" aria-label="Back to dashboard"><Icon name="home" size={14} /></Link>
-            <span aria-hidden="true">/</span>
-            <span aria-current="page">{title}</span>
-          </>
-        )}
+        {title !== "Home" && <span aria-current="page">{title}</span>}
       </div>
       <div className="topbar-right">
         <time>{date}</time>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import type { Account, WorkspaceRecord } from "@/lib/api";
+import type { Account, NotificationRecord, WorkspaceRecord } from "@/lib/api";
 import { apiRequest, TOKEN_KEY } from "@/lib/api";
 import { user as sampleUser, workspaces as sampleWorkspaces } from "@/lib/data";
 import Icon from "./Icon";
@@ -19,6 +19,8 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWork
   const router = useRouter();
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [notificationCount, setNotificationCount] = useState(0);
   const account = profile ?? { id: 0, full_name: sampleUser.fullName, email: "" };
   const workspaceList = useMemo(() => workspaces ?? sampleWorkspaces.map((workspace) => ({
     id: Number.isNaN(Number(workspace.id)) ? workspace.id : Number(workspace.id),
@@ -31,6 +33,19 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWork
   const initials = account.full_name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
 
   useEffect(() => setSidebarWorkspaces(workspaceList), [workspaceList]);
+  useEffect(() => setMobileOpen(false), [pathname]);
+
+  useEffect(() => {
+    let active = true;
+    apiRequest<NotificationRecord[]>("/api/notifications/")
+      .then((notifications) => {
+        if (active) setNotificationCount(notifications.length);
+      })
+      .catch(() => {
+        if (active) setNotificationCount(0);
+      });
+    return () => { active = false; };
+  }, [profile?.id]);
 
   async function signOut() {
     setSigningOut(true);
@@ -45,17 +60,22 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWork
   }
 
   return (
-    <aside className="sidebar">
+    <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       <Link href="/dashboard" className="brand" aria-label="TrackIt dashboard">
         <span className="brand-mark"><Icon name="check-square" size={16} strokeWidth={2.25} /></span>
         <span className="brand-name">TrackItz</span>
       </Link>
+      <button className="mobile-nav-toggle" type="button" aria-label={mobileOpen ? "Close navigation menu" : "Open navigation menu"} aria-expanded={mobileOpen} onClick={() => setMobileOpen((open) => !open)}>
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+          {mobileOpen ? <path d="m6 6 12 12M18 6 6 18" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
+        </svg>
+      </button>
       <nav className="nav" aria-label="Main">
         <Link href="/dashboard" className={`nav-item ${pathname === "/dashboard" ? "active" : ""}`} aria-current={pathname === "/dashboard" ? "page" : undefined}>
           <Icon name="home" /><span>Home</span>
         </Link>
         <Link href="/notifications" className={`nav-item ${pathname.startsWith("/notifications") ? "active" : ""}`} aria-current={pathname.startsWith("/notifications") ? "page" : undefined}>
-          <Icon name="bell" /><span>Notifications</span>
+          <Icon name="bell" /><span>Notifications</span><span className="nav-badge" aria-label={`${notificationCount} notifications`}>{notificationCount}</span>
         </Link>
         {profile?.is_admin && <Link href="/admin" className={`nav-item ${pathname.startsWith("/admin") ? "active" : ""}`} aria-current={pathname.startsWith("/admin") ? "page" : undefined}>
           <Icon name="users" /><span>Admin</span>
@@ -86,7 +106,7 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWork
           <span className="account-text"><strong>{account.full_name}</strong><small>{account.email}</small></span>
         </div>
         <button className="nav-item muted sign-out" disabled={signingOut} onClick={signOut} type="button">
-          <Icon name="chevrons-up-down" size={14} /><span>{signingOut ? "Signing out…" : "Sign out"}</span>
+          <Icon name="log-out" size={16} /><span>{signingOut ? "Logging out…" : "Log out"}</span>
         </button>
       </div>
     </aside>
