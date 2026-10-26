@@ -194,3 +194,36 @@ class UserRole(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.role.name}"
 
+
+class SocialAccount(models.Model):
+    class Provider(models.TextChoices):
+        GOOGLE = "google", "Google"
+        GITHUB = "github", "GitHub"
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="social_accounts",
+    )
+
+    provider = models.CharField(
+        max_length=20,
+        choices=Provider.choices,
+    )
+
+    provider_user_id = models.CharField(max_length=255)
+
+    email = models.EmailField(blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["provider", "provider_user_id"],
+                name="unique_social_provider_account",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.provider}: {self.user}"

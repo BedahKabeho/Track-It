@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { apiRequest, TOKEN_KEY } from "@/lib/api";
@@ -262,6 +262,67 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [feedback, setFeedback] = useState<{ type: "error" | "success"; message: string } | null>(null);
 
+  useEffect(() => {
+    const hash = window.location.hash;
+
+    if (!hash.startsWith("#token=")) {
+      const params = new URLSearchParams(window.location.search);
+
+      if (params.has("oauth_error")) {
+        setFeedback({
+          type: "error",
+          message: "Social sign-in failed. Please try again.",
+        });
+        window.history.replaceState(null, "", window.location.pathname);
+      }
+
+      return;
+    }
+
+    const token = new URLSearchParams(hash.slice(1)).get("token");
+
+    // Remove the token from the visible URL immediately.
+    window.history.replaceState(null, "", window.location.pathname);
+
+    if (!token) {
+      setFeedback({
+        type: "error",
+        message: "Sign-in failed. Please try again.",
+      });
+      return;
+    }
+
+    let cancelled = false;
+
+    async function completeSignIn() {
+      window.localStorage.setItem(TOKEN_KEY, token!);
+
+      try {
+        const { user } = await apiRequest<{
+          user: { is_admin?: boolean };
+        }>("/api/auth/me/");
+
+        if (!cancelled) {
+          router.replace(user.is_admin ? "/admin" : "/dashboard");
+        }
+      } catch {
+        window.localStorage.removeItem(TOKEN_KEY);
+
+        if (!cancelled) {
+          setFeedback({
+            type: "error",
+            message: "Could not complete sign-in. Please try again.",
+          });
+        }
+      }
+    }
+
+    void completeSignIn();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [router]);
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFeedback(null);
@@ -284,13 +345,13 @@ export default function LoginPage() {
     }
   }
 
-  async function handleGoogleLogin() {
-    setFeedback({ type: "error", message: "Google sign in is not configured for this app yet." });
-  }
+function handleGoogleLogin() {
+  window.location.assign("/api/auth/google/");
+}
 
-  function handleGitHubLogin() {
-    setFeedback({ type: "error", message: "GitHub sign in is not configured for this app yet." });
-  }
+function handleGitHubLogin() {
+  window.location.assign("/api/auth/github/");
+}
 
   return (
     <main className="login-page">
