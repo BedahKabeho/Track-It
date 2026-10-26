@@ -3,6 +3,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
 from django.db.models import Count, Exists, OuterRef, Q
+from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.authentication import TokenAuthentication
@@ -10,8 +11,14 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Notification, Task, Workspace, UserRole
-from .permissions import IsTrackItAdmin
+from .models import Notification, Role, Task, UserRole, Workspace
+from .permissions import (
+    IsAdminRole,
+    IsNotSuperuserCreatingTasks,
+    IsOwner,
+    IsSuperAdmin,
+    has_admin_role,
+)
 from .serializers import AdminTaskSerializer, AdminUserSerializer, NotificationSerializer, TaskSerializer, WorkspaceSerializer
 
 User = get_user_model()
@@ -19,15 +26,14 @@ User = get_user_model()
 
 def user_payload(user):
     full_name = " ".join(part for part in (user.first_name, user.last_name) if part).strip()
+    is_admin = has_admin_role(user)
     return {
         "id": user.id,
         "full_name": full_name or user.get_username(),
         "email": user.email,
-        "is_admin": bool(
-            user.is_staff
-            or user.is_superuser
-            or UserRole.objects.filter(user=user, role__name="Admin").exists()
-        ),
+        "role": "ADMIN" if is_admin else "USER",
+        "is_admin": is_admin,
+        "is_superuser": user.is_superuser,
     }
 
 
@@ -71,6 +77,9 @@ class RegisterSerializer(serializers.Serializer):
 
       return user
 
+
+class RoleUpdateSerializer(serializers.Serializer):
+    role = serializers.ChoiceField(choices=("ADMIN", "USER"))
 
 
 class RegisterView(APIView):
@@ -116,7 +125,7 @@ class WorkspaceListCreateView(generics.ListCreateAPIView):
 
 class WorkspaceDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = WorkspaceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_queryset(self):
         return Workspace.objects.filter(user=self.request.user)
@@ -124,7 +133,7 @@ class WorkspaceDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 class TaskListCreateView(generics.ListCreateAPIView):
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsNotSuperuserCreatingTasks]
 
     def get_queryset(self):
         queryset = Task.objects.filter(workspace__user=self.request.user)
@@ -145,28 +154,10 @@ class TaskListCreateView(generics.ListCreateAPIView):
 
 class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = TaskSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsOwner]
 
     def get_queryset(self):
-        user = self.request.user
-        is_admin = (
-            user.is_authenticated
-            and (
-                user.is_superuser
-                or user.is_staff
-                or UserRole.objects.filter(
-                    user=user,
-                    role__name="Admin"
-                ).exists()
-            )
-        )
-        if is_admin:
-            return Task.objects.select_related(
-                "workspace",
-                "workspace__user"
-            ).all()
-
-        return Task.objects.filter(workspace__user=user)
+        return Task.objects.filter(workspace__user=self.request.user)
 
     def perform_update(self, serializer):
         old_task = self.get_object()
@@ -205,7 +196,7 @@ class NotificationReadView(generics.UpdateAPIView):
         serializer.save(read_at=timezone.now())
 
 class AdminStatsView(APIView):
-    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
 
     def get(self, request):
         return Response({
@@ -220,7 +211,7 @@ class AdminStatsView(APIView):
 
 class AdminUserListView(generics.ListAPIView):
     serializer_class = AdminUserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
 
     def get_queryset(self):
         queryset = User.objects.annotate(
@@ -239,9 +230,30 @@ class AdminUserListView(generics.ListAPIView):
         return queryset
 
 
+class AdminUserRoleUpdateView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsSuperAdmin]
+
+    @transaction.atomic
+    def patch(self, request, user_id):
+        target = get_object_or_404(User, pk=user_id)
+        if target.is_superuser:
+            raise ValidationError({"role": "Superuser roles are managed through Django."})
+
+        serializer = RoleUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        role_name = (
+            Role.RoleName.ADMIN
+            if serializer.validated_data["role"] == "ADMIN"
+            else Role.RoleName.USER
+        )
+        role, _ = Role.objects.get_or_create(name=role_name)
+        UserRole.objects.update_or_create(user=target, defaults={"role": role})
+        return Response({"user": user_payload(target)}, status=status.HTTP_200_OK)
+
+
 class AdminTaskListView(generics.ListAPIView):
     serializer_class = AdminTaskSerializer
-    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
 
     def get_queryset(self):
         queryset = Task.objects.select_related("workspace", "workspace__user").all()
