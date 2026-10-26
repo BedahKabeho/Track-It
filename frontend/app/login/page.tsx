@@ -540,9 +540,9 @@ function handleGitHubLogin() {
         <footer className="login-panel-footer">
           <span>&#169; 2026 TrackItz. All rights reserved.</span>
           <div className="login-footer-links">
-            <a href="#privacy">Privacy Policy</a>
+            <Link href="/privacy">Privacy Policy</Link>
             <span className="footer-link-divider">|</span>
-            <a href="#terms">Terms &amp; Conditions</a>
+            <Link href="/terms">Terms &amp; Conditions</Link>
           </div>
         </footer>
 

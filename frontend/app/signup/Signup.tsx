@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { authApi } from "@/src/lib/api/auth";
 import Icon from "@/app/components/Icon";
 import { apiRequest, TOKEN_KEY, type Account } from "@/lib/api";
@@ -48,6 +49,7 @@ export default function SignupForm() {
   const router = useRouter();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [message, setMessage] = useState("");
   const [messageType, setMessageType] = useState<"error" | "success" | "">("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -72,7 +74,7 @@ export default function SignupForm() {
           full_name: formData.get("full_name"),
           email: formData.get("email"),
           password,
-          terms_accepted: formData.get("terms_accepted") === "on",
+          terms_accepted: termsAccepted,
         }),
       }, false);
       window.localStorage.setItem(TOKEN_KEY, result.token);
@@ -89,36 +91,54 @@ export default function SignupForm() {
   }
 
   return (
-    <form className="signup-form" onSubmit={handleSubmit}>
-      <div className="signup-field">
-        <label htmlFor="full-name">Full Name*</label>
-        <div className="signup-input-wrap">
-          <Icon name="user" size={16} />
-          <input autoComplete="name" id="full-name" name="full_name" placeholder="Enter your full name" required />
+    <>
+      <form className="signup-form" onSubmit={handleSubmit}>
+        <div className="signup-field">
+          <label htmlFor="full-name">Full Name*</label>
+          <div className="signup-input-wrap">
+            <Icon name="user" size={16} />
+            <input autoComplete="name" id="full-name" name="full_name" placeholder="Enter your full name" required />
+          </div>
         </div>
-      </div>
 
-      <div className="signup-field">
-        <label htmlFor="email">Email Address*</label>
-        <div className="signup-input-wrap">
-          <Icon name="mail" size={16} />
-          <input autoComplete="email" id="email" name="email" placeholder="Enter your email address" required type="email" />
+        <div className="signup-field">
+          <label htmlFor="email">Email Address*</label>
+          <div className="signup-input-wrap">
+            <Icon name="mail" size={16} />
+            <input autoComplete="email" id="email" name="email" placeholder="Enter your email address" required type="email" />
+          </div>
         </div>
-      </div>
 
-      <PasswordField id="password" label="Password" onChange={setPassword} placeholder="Create your password" value={password} />
-      <PasswordField id="confirm-password" label="Confirm Password" onChange={setConfirmPassword} placeholder="Confirm your password" value={confirmPassword} />
+        <PasswordField id="password" label="Password" onChange={setPassword} placeholder="Create your password" value={password} />
+        <PasswordField id="confirm-password" label="Confirm Password" onChange={setConfirmPassword} placeholder="Confirm your password" value={confirmPassword} />
 
-      <label className="signup-terms">
-        <input name="terms_accepted" required type="checkbox" />
-        <span>I agree to the <a href="#terms">Terms &amp; Conditions</a> and <a href="#privacy">Privacy Policy</a></span>
-      </label>
+        <label className="signup-terms">
+          <input
+            name="terms_accepted"
+            required
+            type="checkbox"
+            checked={termsAccepted}
+            onChange={(e) => setTermsAccepted(e.target.checked)}
+          />
+          <span>
+            I agree to the{" "}
+            <Link className="signup-legal-link" href="/terms">
+              Terms &amp; Conditions
+            </Link>{" "}
+            and{" "}
+            <Link className="signup-legal-link" href="/privacy">
+              Privacy Policy
+            </Link>
+          </span>
+        </label>
 
-      <button className="signup-submit" disabled={isSubmitting} type="submit">
-        <Icon name="user-plus" size={17} />
-        {isSubmitting ? "Creating Account…" : "Create Account"}
-      </button>
-      <p aria-live="polite" className={`signup-message ${messageType}`}>{message}</p>
-    </form>
+        <button className="signup-submit" disabled={isSubmitting} type="submit">
+          <Icon name="user-plus" size={17} />
+          {isSubmitting ? "Creating Account…" : "Create Account"}
+        </button>
+        <p aria-live="polite" className={`signup-message ${messageType}`}>{message}</p>
+      </form>
+
+    </>
   );
 }

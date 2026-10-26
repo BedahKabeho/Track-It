@@ -1295,22 +1295,340 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
 @media(max-width:1150px){.workspace-task-layout{grid-template-columns:minmax(0,1fr)}.workspace-progress-card{max-width:none}}
 @media(max-width:760px){.workspace-detail-hero{align-items:flex-start;flex-direction:column}.workspace-detail-stats{grid-template-columns:1fr}.workspace-task-footer{flex-direction:column}}
 
-/* Account creation */
+/* Account creation - To-Do List Faint Theme */
 .signup-screen {
+  position: relative;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
-  background: #f1f3f3;
+  padding: 32px 16px;
+  background: #f3f6f6;
+  background: radial-gradient(circle at 12% 18%, rgba(38, 155, 164, 0.08) 0%, transparent 45%),
+              radial-gradient(circle at 88% 82%, rgba(38, 155, 164, 0.07) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, #ffffff 0%, #f1f4f4 100%);
+  overflow: hidden;
 }
+
+/* Subtle To-Do Theme Planner Canvas */
+.todo-bg-container {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 1;
+  user-select: none;
+}
+
+.todo-bg-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(80px);
+}
+
+.glow-top-left {
+  top: -8%;
+  left: -6%;
+  width: clamp(320px, 40vw, 560px);
+  height: clamp(320px, 40vw, 560px);
+  background: radial-gradient(circle, rgba(38, 155, 164, 0.16) 0%, transparent 70%);
+}
+
+.glow-bottom-right {
+  bottom: -10%;
+  right: -6%;
+  width: clamp(340px, 42vw, 580px);
+  height: clamp(340px, 42vw, 580px);
+  background: radial-gradient(circle, rgba(38, 155, 164, 0.14) 0%, transparent 70%);
+}
+
+.glow-center {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: clamp(400px, 50vw, 700px);
+  height: clamp(400px, 50vw, 700px);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.85) 0%, transparent 75%);
+}
+
+/* Notebook / Planner Dot-Grid Overlay */
+.todo-bg-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: radial-gradient(circle, rgba(38, 155, 164, 0.14) 1.25px, transparent 1.25px);
+  background-size: 26px 26px;
+  opacity: 0.75;
+}
+
+/* Faint Floating To-Do Cards Canvas */
+.todo-bg-cards {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.todo-bg-card {
+  position: absolute;
+  width: 275px;
+  padding: 14px 16px 14px 15px;
+  background: rgba(255, 255, 255, 0.68);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  border: 1px solid rgba(38, 155, 164, 0.17);
+  border-radius: 13px;
+  box-shadow: 0 12px 30px -8px rgba(20, 60, 74, 0.08), 0 2px 6px rgba(20, 60, 74, 0.02);
+  opacity: 0.44; /* Faint appearance as requested */
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  will-change: transform;
+}
+
+/* Dynamic floating animations */
+@keyframes todoFloatA {
+  0% { transform: translateY(0px) rotate(-2.8deg); }
+  50% { transform: translateY(-8px) rotate(-1.6deg); }
+  100% { transform: translateY(2px) rotate(-3.2deg); }
+}
+
+@keyframes todoFloatB {
+  0% { transform: translateY(0px) rotate(2.4deg); }
+  50% { transform: translateY(8px) rotate(3.2deg); }
+  100% { transform: translateY(-4px) rotate(1.6deg); }
+}
+
+.card-top-left {
+  top: max(32px, 8vh);
+  left: max(24px, calc(50% - 485px));
+  animation: todoFloatA 10s ease-in-out infinite alternate;
+}
+
+.card-bottom-left {
+  bottom: max(30px, 8vh);
+  left: max(28px, calc(50% - 495px));
+  animation: todoFloatB 12s ease-in-out infinite alternate 0.5s;
+}
+
+.card-top-right {
+  top: max(38px, 10vh);
+  right: max(24px, calc(50% - 485px));
+  animation: todoFloatB 11s ease-in-out infinite alternate 1s;
+}
+
+.card-bottom-right {
+  bottom: max(36px, 9vh);
+  right: max(28px, calc(50% - 495px));
+  animation: todoFloatA 13s ease-in-out infinite alternate 1.5s;
+}
+
+/* Card Internal Components */
+.todo-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 9px;
+}
+
+.todo-card-title-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.todo-card-icon {
+  color: #269ba4;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.todo-card-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #193f4b;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+.todo-card-badge {
+  font-size: 9px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 99px;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.badge-teal {
+  background: #def4f6;
+  color: #157983;
+}
+
+.badge-amber {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.todo-card-tag {
+  font-size: 10px;
+  font-weight: 600;
+  color: #269ba4;
+  white-space: nowrap;
+}
+
+.todo-card-progress {
+  height: 3px;
+  background: rgba(38, 155, 164, 0.16);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 9px;
+}
+
+.todo-progress-bar {
+  height: 100%;
+  background: #269ba4;
+  border-radius: 99px;
+}
+
+.todo-card-items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+}
+
+.todo-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: #435459;
+}
+
+.todo-item.completed .todo-item-text {
+  text-decoration: line-through;
+  color: #8da1a6;
+}
+
+.todo-item-text {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.todo-checkbox {
+  width: 14px;
+  height: 14px;
+  border-radius: 3.5px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.todo-checkbox.checked {
+  background: #269ba4;
+  color: #ffffff;
+}
+
+.todo-checkbox.unchecked {
+  border: 1.5px solid #8fa2a7;
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.todo-priority-pill {
+  font-size: 8.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.priority-high {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+/* Faint Decorative Stamps / Watermarks */
+.todo-bg-stamp {
+  position: absolute;
+  color: rgba(38, 155, 164, 0.055);
+  pointer-events: none;
+}
+
+.stamp-top-left {
+  top: 10%;
+  left: 7%;
+  transform: rotate(-12deg);
+}
+
+.stamp-top-center {
+  top: 5%;
+  left: 48%;
+  transform: translateX(-50%) rotate(10deg);
+}
+
+.stamp-top-right {
+  top: 11%;
+  right: 8%;
+  transform: rotate(14deg);
+}
+
+.stamp-bottom-left {
+  bottom: 9%;
+  left: 8%;
+  transform: rotate(8deg);
+}
+
+.stamp-bottom-center {
+  bottom: 4%;
+  left: 52%;
+  transform: translateX(-50%) rotate(-8deg);
+}
+
+.stamp-bottom-right {
+  bottom: 8%;
+  right: 7%;
+  transform: rotate(-15deg);
+}
+
+
+/* Responsive adjustment for floating cards */
+@media (max-width: 1160px) {
+  .todo-bg-card {
+    width: 235px;
+    opacity: 0.35;
+    padding: 11px 13px;
+  }
+  .card-top-left { left: 16px; }
+  .card-bottom-left { left: 16px; }
+  .card-top-right { right: 16px; }
+  .card-bottom-right { right: 16px; }
+}
+
+@media (max-width: 920px) {
+  .todo-bg-cards {
+    display: none; /* Hide floating cards on mobile to avoid overlap */
+  }
+}
+
 .signup-panel {
+  position: relative;
+  z-index: 10;
   width: min(100%, 440px);
-  padding: 24px;
-  border: 1px solid #e3e8e8;
+  padding: 26px;
+  border: 1px solid rgba(220, 230, 230, 0.95);
   border-radius: 16px;
-  box-shadow: 0 12px 36px rgb(27 58 61 / 9%);
-  background: #fff;
+  box-shadow: 0 18px 45px -8px rgba(20, 60, 74, 0.12), 0 4px 14px rgba(20, 60, 74, 0.03);
+  background: #ffffff;
   color: #4e595c;
 }
 .signup-brand { display: flex; align-items: center; gap: 10px; height: 34px; }
@@ -1366,9 +1684,18 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
   line-height: 20px;
   white-space: nowrap;
 }
-.signup-terms input { width: 15px; height: 15px; flex: 0 0 auto; accent-color: #2a9aa0; }
-.signup-terms a { color: #159daf; }
-.signup-terms a:hover { text-decoration: underline; }
+.signup-terms input { width: 15px; height: 15px; flex: 0 0 auto; accent-color: #2a9aa0; cursor: pointer; }
+.signup-terms a, .signup-legal-link {
+  color: #159daf;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline;
+}
+.signup-terms a:hover, .signup-legal-link:hover { text-decoration: underline; }
 .signup-submit {
   width: calc(100% - 50px);
   min-height: 39px;
@@ -1684,8 +2011,35 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
   .landing-benefit-icon svg { width: 26px; height: 26px; }
   .landing-benefit h2 { margin: 2px 0 4px; font-size: 15px; }
   .landing-benefit p { max-width: 290px; font-size: 12px; line-height: 1.6; }
+}
+
 /* App-wide dark theme */
-.auth-theme-toggle { position: fixed; z-index: 60; top: 14px; right: 16px; }
+.auth-theme-toggle {
+  position: fixed;
+  z-index: 60;
+  top: 14px;
+  right: 16px;
+  width: 38px !important;
+  height: 38px !important;
+  border: 1px solid rgba(255, 255, 255, 0.42) !important;
+  border-radius: 10px !important;
+  background: rgba(10, 45, 51, 0.72) !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.18);
+}
+.auth-theme-toggle:hover {
+  background: rgba(10, 45, 51, 0.92) !important;
+  color: #ffffff !important;
+}
+.auth-theme-toggle svg {
+  width: 18px;
+  height: 18px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 body:has(.topbar) .auth-theme-toggle { display: none; }
 html[data-theme="dark"] {
   color-scheme: dark;
@@ -1791,6 +2145,14 @@ html[data-theme="dark"] .login-field label { color: var(--text-2); }
 html[data-theme="dark"] .login-input-wrap { background-color: #111a1d; border-color: #405156; }
 html[data-theme="dark"] .login-input-wrap input { color: var(--text); }
 html[data-theme="dark"] .login-input-wrap input::placeholder { color: #5d757d; }
+html[data-theme="dark"] .login-input-wrap input:-webkit-autofill,
+html[data-theme="dark"] .login-input-wrap input:-webkit-autofill:hover,
+html[data-theme="dark"] .login-input-wrap input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #e5eeee;
+  -webkit-box-shadow: 0 0 0 1000px #111a1d inset;
+  box-shadow: 0 0 0 1000px #111a1d inset;
+  caret-color: #e5eeee;
+}
 html[data-theme="dark"] .login-social-card { background-color: #152024; border-color: #384b50; }
 html[data-theme="dark"] .login-social-card .github-mark { color: #e5eeee; }
 html[data-theme="dark"] .login-divider::before,
@@ -1844,6 +2206,21 @@ html[data-theme="dark"] .new-task-description-field,
 html[data-theme="dark"] .new-task-due-field,
 html[data-theme="dark"] .new-task-cancel { color: var(--text); }
 html[data-theme="dark"] .new-task-date-input { color: var(--text-2); border-color: #405156; }
+html[data-theme="dark"] .todo-bg-card {
+  background: rgba(18, 30, 36, 0.72);
+  border-color: rgba(38, 155, 164, 0.25);
+  box-shadow: 0 14px 34px -8px rgba(0, 0, 0, 0.45);
+  opacity: 0.38;
+}
+html[data-theme="dark"] .todo-card-title { color: #e2e8f0; }
+html[data-theme="dark"] .todo-item { color: #94a3b8; }
+html[data-theme="dark"] .todo-item.completed .todo-item-text { color: #64748b; }
+html[data-theme="dark"] .todo-bg-stamp { color: rgba(38, 155, 164, 0.08); }
+html[data-theme="dark"] .todo-bg-grid {
+  background-image: radial-gradient(circle, rgba(42, 154, 160, 0.2) 1.25px, transparent 1.25px);
+  opacity: 0.85;
+}
+
 @media (max-width: 600px) {
   .new-task-dialog { min-height: min(700px, calc(100vh - 28px)); padding: 20px; }
   .new-task-dialog form { min-height: min(658px, calc(100vh - 68px)); }
@@ -1852,4 +2229,358 @@ html[data-theme="dark"] .new-task-date-input { color: var(--text-2); border-colo
   .new-task-heading-copy h2 { font-size: 17px; }
   .new-task-description-field textarea { min-height: 130px; }
   .new-task-actions { padding-top: 20px; }
+}
+
+/* ==========================================================================
+   Legal Documentation Modal & Views (Terms and Conditions / Privacy Policy)
+   Matches clean card arrangement with custom scrollbar, fade & actions
+   ========================================================================== */
+
+.legal-view-screen {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 16px;
+  background: #f3f6f6;
+  background: radial-gradient(circle at 12% 18%, rgba(38, 155, 164, 0.08) 0%, transparent 45%),
+              radial-gradient(circle at 88% 82%, rgba(38, 155, 164, 0.07) 0%, transparent 50%),
+              radial-gradient(circle at 50% 50%, #ffffff 0%, #edf2f2 100%);
+  overflow: auto;
+}
+
+.legal-view-backdrop {
+  position: absolute;
+  inset: 0;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(255, 255, 255, 0.18);
+  z-index: 2;
+  pointer-events: none;
+}
+
+.legal-view-content {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+/* Modal Overlay for on-page dialog */
+.legal-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  animation: legalModalFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes legalModalFade {
+  from { opacity: 0; transform: scale(0.97); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Modal Card Structure */
+.legal-modal-card {
+  width: min(100%, 750px);
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 36px 42px 30px;
+  box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.15), 0 2px 6px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  box-sizing: border-box;
+}
+
+/* Standalone legal pages use the available viewport for a calmer reading layout. */
+.legal-modal-card.standalone {
+  width: min(100%, 900px);
+  height: min(820px, calc(100dvh - 64px));
+  min-height: min(560px, calc(100dvh - 32px));
+  padding: clamp(24px, 4vw, 48px) clamp(24px, 6vw, 72px) clamp(20px, 3vw, 32px);
+}
+
+.legal-modal-card.standalone .legal-modal-title {
+  font-size: clamp(24px, 3vw, 34px);
+}
+
+.legal-modal-card.standalone .legal-modal-subtitle {
+  font-size: clamp(14px, 1.5vw, 17px);
+}
+
+.legal-modal-card.standalone .legal-modal-scroll-wrap {
+  flex: 1;
+  min-height: 0;
+}
+
+.legal-modal-card.standalone .legal-modal-scroll-body {
+  max-height: 100%;
+  padding-right: 28px;
+}
+
+.legal-modal-card.standalone .legal-modal-intro {
+  font-size: clamp(15px, 1.5vw, 17px);
+}
+
+.legal-modal-card.standalone .legal-modal-section-title {
+  font-size: clamp(15px, 1.4vw, 17px);
+}
+
+.legal-modal-card.standalone .legal-modal-section-text {
+  font-size: clamp(14px, 1.3vw, 16px);
+}
+
+.legal-modal-header {
+  margin-bottom: 22px;
+}
+
+.legal-modal-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: #111827;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.legal-modal-subtitle {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* Scroll Area */
+.legal-modal-scroll-wrap {
+  position: relative;
+  margin-bottom: 8px;
+}
+
+.legal-modal-scroll-body {
+  max-height: 330px;
+  overflow-y: auto;
+  padding-right: 22px;
+  padding-bottom: 30px;
+  outline: none;
+}
+
+/* Custom Scrollbar matching image */
+.legal-modal-scroll-body::-webkit-scrollbar {
+  width: 6px;
+}
+
+.legal-modal-scroll-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.legal-modal-scroll-body::-webkit-scrollbar-thumb {
+  background: #2b2f36;
+  border-radius: 99px;
+}
+
+.legal-modal-scroll-body::-webkit-scrollbar-thumb:hover {
+  background: #111827;
+}
+
+.legal-modal-intro {
+  font-size: 13.5px;
+  color: #374151;
+  line-height: 1.6;
+  margin: 0 0 18px;
+}
+
+.legal-modal-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.legal-modal-section-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0 0 5px;
+}
+
+.legal-modal-section-text {
+  font-size: 13px;
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+/* Fading Bottom Indicator */
+.legal-modal-fade-bottom {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 22px;
+  height: 52px;
+  background: linear-gradient(to bottom, transparent, rgba(255, 255, 255, 0.98));
+  pointer-events: none;
+  border-radius: 0 0 10px 10px;
+}
+
+/* Bottom Actions matching Reject / Agree in image */
+.legal-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+  padding-top: 14px;
+}
+
+.legal-rejection-message {
+  flex-basis: 100%;
+  color: #a33333;
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: right;
+}
+
+.legal-btn-reject {
+  min-width: 86px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 22px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #111827;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.legal-btn-reject:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.legal-btn-agree {
+  min-width: 86px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 26px;
+  border: 1px solid #000000;
+  border-radius: 10px;
+  background: #000000;
+  color: #ffffff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.legal-btn-agree:hover {
+  opacity: 0.88;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  .legal-view-screen {
+    align-items: flex-start;
+    padding: 16px 12px;
+  }
+  .legal-modal-card.standalone {
+    height: calc(100dvh - 32px);
+    min-height: 480px;
+    padding: 24px 20px 18px;
+  }
+  .legal-modal-card.standalone .legal-modal-scroll-body {
+    padding-right: 14px;
+  }
+  .legal-modal-card {
+    padding: 26px 22px 20px;
+    border-radius: 16px;
+  }
+  .legal-modal-title {
+    font-size: 20px;
+  }
+  .legal-modal-scroll-body {
+    max-height: 270px;
+    padding-right: 14px;
+  }
+  .legal-modal-fade-bottom {
+    right: 14px;
+  }
+}
+
+/* Dark Mode Support */
+html[data-theme="dark"] .legal-view-screen {
+  background: #0b1216;
+}
+
+html[data-theme="dark"] .legal-view-backdrop {
+  background: rgba(11, 18, 22, 0.4);
+}
+
+html[data-theme="dark"] .legal-modal-card {
+  background: #141d22;
+  border-color: #27373c;
+  box-shadow: 0 25px 65px -12px rgba(0, 0, 0, 0.6);
+}
+
+html[data-theme="dark"] .legal-modal-title {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .legal-modal-subtitle {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .legal-modal-intro {
+  color: #cbd5e1;
+}
+
+html[data-theme="dark"] .legal-modal-section-title {
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .legal-modal-section-text {
+  color: #94a3b8;
+}
+
+html[data-theme="dark"] .legal-modal-fade-bottom {
+  background: linear-gradient(to bottom, transparent, rgba(20, 29, 34, 0.98));
+}
+
+html[data-theme="dark"] .legal-modal-scroll-body::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+html[data-theme="dark"] .legal-btn-reject {
+  background: #1a252c;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+html[data-theme="dark"] .legal-btn-reject:hover {
+  background: #24323b;
+}
+
+html[data-theme="dark"] .legal-btn-agree {
+  background: #ffffff;
+  color: #000000;
+  border-color: #ffffff;
 }

@@ -1,9 +1,11 @@
 import SignupForm from "./Signup";
 import Link from "next/link";
+import TodoBackground from "@/app/components/TodoBackground";
 
 export default function SignupPage() {
   return (
     <main className="signup-screen">
+      <TodoBackground />
       <section className="signup-panel" aria-labelledby="signup-title">
         <div className="signup-brand" aria-label="Trackitz, Simple Task Tracker">
           <span className="signup-brand-mark"><span /></span>
