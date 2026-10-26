@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { authApi } from "@/src/lib/api/auth";
 import { ApiError } from "@/src/lib/api/client";
+import { TOKEN_KEY } from '../../lib/api';
 
 function Brand() {
   return (
@@ -268,7 +269,8 @@ export default function LoginPage() {
     setFeedback(null);
     setIsSubmitting(true);
     try {
-      await authApi.login({ email, password });
+      const result = await authApi.login({ email, password });
+      window.localStorage.setItem(TOKEN_KEY, result.token);
       router.replace("/dashboard");
     } catch (error) {
       setFeedback({
