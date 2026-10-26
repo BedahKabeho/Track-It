@@ -41,7 +41,7 @@ ALLOWED_HOSTS = (
 # Application definition
 
 INSTALLED_APPS = [
-    'django.contrib.admin',
+    'config.apps.SuperuserAdminConfig',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
@@ -213,4 +213,3 @@ CELERY_BEAT_SCHEDULE = {
         "schedule": crontab(minute="*/15"),
     },
 }
-
