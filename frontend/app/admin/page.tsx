@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { apiRequest, getToken, type Account } from "@/lib/api";
-import { getAdminStats, getAdminTasks, getAdminUsers, setAdminUserRole, type AdminStats, type AdminTask, type AdminUser } from "@/lib/admin";
+import { useEffect, useRef, useState } from "react";
+import { apiRequest, getToken, TOKEN_KEY, type Account } from "@/lib/api";
+import { deleteAdminTask, getAdminStats, getAdminTasks, getAdminUsers, setAdminUserRole, type AdminStats, type AdminTask, type AdminUser } from "@/lib/admin";
+import Icon from "@/app/components/Icon";
 import ThemeToggle from "@/app/components/ThemeToggle";
 import "./admin.css";
 
@@ -23,7 +24,7 @@ function formatLastLogin(value: string | null) {
 const statusLabels: Record<AdminTask["status"], string> = {
   pending: "Pending",
   in_progress: "In progress",
-  done: "Completed",
+  done: "Done",
 };
 
 export default function AdminPage() {
@@ -42,6 +43,45 @@ export default function AdminPage() {
   const [usersLoading, setUsersLoading] = useState(false);
   const [roleSavingUserId, setRoleSavingUserId] = useState<number | null>(null);
   const [error, setError] = useState("");
+  const [signingOut, setSigningOut] = useState(false);
+  const [deletingTaskId, setDeletingTaskId] = useState<number | null>(null);
+  const deletedTaskIds = useRef(new Set<number>());
+
+  async function signOut() {
+    setSigningOut(true);
+    try {
+      await apiRequest("/api/auth/logout/", { method: "POST" });
+    } catch {
+      // Clear local credentials even if the server cannot be reached.
+    } finally {
+      window.localStorage.removeItem(TOKEN_KEY);
+      router.replace("/login");
+    }
+  }
+
+  async function handleDeleteTask(task: AdminTask) {
+    if (!window.confirm(`Delete “${task.title}”? This cannot be undone.`)) return;
+    setError("");
+    deletedTaskIds.current.add(task.id);
+    setTasks((current) => current.filter((item) => item.id !== task.id));
+    setDeletingTaskId(task.id);
+    try {
+      await deleteAdminTask(task.id);
+      setStats((current) => current ? {
+        ...current,
+        total_tasks: Math.max(0, current.total_tasks - 1),
+        pending_tasks: Math.max(0, current.pending_tasks - (task.status === "pending" ? 1 : 0)),
+        in_progress_tasks: Math.max(0, current.in_progress_tasks - (task.status === "in_progress" ? 1 : 0)),
+        completed_tasks: Math.max(0, current.completed_tasks - (task.status === "done" ? 1 : 0)),
+      } : current);
+    } catch (deleteError) {
+      deletedTaskIds.current.delete(task.id);
+      setTasks((current) => current.some((item) => item.id === task.id) ? current : [...current, task]);
+      setError(deleteError instanceof Error ? deleteError.message : "Could not delete this task.");
+    } finally {
+      setDeletingTaskId(null);
+    }
+  }
 
   useEffect(() => {
     let active = true;
@@ -115,7 +155,7 @@ export default function AdminPage() {
     const timer = window.setTimeout(() => {
       setTasksLoading(true);
       getAdminTasks({ search: query, status }).then((data) => {
-        if (active) setTasks(data);
+        if (active) setTasks(data.filter((task) => !deletedTaskIds.current.has(task.id)));
       }).catch((loadError) => {
         if (active) setError(loadError instanceof Error ? loadError.message : "Could not load tasks.");
       }).finally(() => {
@@ -148,6 +188,9 @@ export default function AdminPage() {
           <Link href="/admin" aria-current="page" className="admin-nav-item active">Admin home</Link>
         </nav>
         <div className="admin-account"><span className="admin-avatar">{initials(profile?.full_name ?? "Admin")}</span><span><strong>{profile?.full_name}</strong><small>Administrator</small></span></div>
+        <button type="button" className="admin-signout" onClick={() => void signOut()} disabled={signingOut}>
+          <Icon name="log-out" size={16} /><span>{signingOut ? "Logging out…" : "Log out"}</span>
+        </button>
       </aside>
 
       <div className="admin-main">
@@ -204,7 +247,7 @@ export default function AdminPage() {
             ) : (
               <>
                 <div className="admin-table-scroll"><table className="admin-table">
-                  <thead><tr><th>Task</th><th>Created by</th><th>Workspace</th><th>Status</th><th>Due date</th></tr></thead>
+                  <thead><tr><th>Task</th><th>Created by</th><th>Workspace</th><th>Status</th><th>Due date</th><th>Actions</th></tr></thead>
                   <tbody aria-busy={tasksLoading}>
                     {tasks.map((task) => <tr key={task.id}>
                       <td className="admin-task-title"><strong>{task.title}</strong>{task.description && <small>{task.description}</small>}</td>
@@ -212,6 +255,7 @@ export default function AdminPage() {
                       <td>{task.workspace_name}</td>
                       <td><span className={`admin-pill ${task.status}`}>{statusLabels[task.status]}</span></td>
                       <td>{formatDate(task.due_date)}</td>
+                      <td><button type="button" className="admin-link danger" onClick={() => void handleDeleteTask(task)} disabled={deletingTaskId === task.id} aria-label={`Delete task ${task.title}`}>{deletingTaskId === task.id ? "Deleting..." : "Delete"}</button></td>
                     </tr>)}
                   </tbody>
                 </table></div>

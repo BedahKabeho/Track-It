@@ -78,6 +78,7 @@ class Notification(models.Model):
         DUE_1_DAY = "due_1_day", "Due in 1 day"
         OVERDUE = "overdue", "Overdue"
         IN_PROGRESS = "in_progress", "In-progress reminder"
+        TASK_DELETED = "task_deleted", "Task deleted"
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -87,7 +88,9 @@ class Notification(models.Model):
 
     task = models.ForeignKey(
         Task,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="notifications",
     )
 
@@ -111,8 +114,7 @@ class Notification(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.notification_type}: {self.task.title}"
-
+        return f"{self.notification_type}: {self.task.title if self.task else self.message}"
 
 
 class UserActivity(models.Model):

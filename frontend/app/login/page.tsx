@@ -405,7 +405,7 @@ export default function LoginPage() {
     } catch (error) {
       setFeedback({
         type: "error",
-        message: error instanceof Error ? error.message : "Sign in failed. Please try again.",
+        message: error instanceof Error ? error.message : "Log in failed. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -429,7 +429,7 @@ function handleGitHubLogin() {
         <div className="login-content">
           <div className="login-welcome">
             <h1>Welcome Back!</h1>
-            <p>Sign in to your TrackItz account and continue managing your tasks efficiently.</p>
+            <p>Log in to your TrackItz account and continue managing your tasks efficiently.</p>
           </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
@@ -513,11 +513,15 @@ function handleGitHubLogin() {
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-              <span>{isSubmitting ? "Signing In..." : "Sign In"}</span>
+              <span>{isSubmitting ? "Logging in..." : "Log in"}</span>
             </button>
           </form>
 
           {feedback && <p className={`login-feedback ${feedback.type}`} role="status">{feedback.message}</p>}
+
+          <p className="login-signup-prompt">
+            Don&apos;t have an account? <Link href="/signup">Create one</Link>
+          </p>
 
           <div className="login-divider">
             <span>Or continue with</span>
@@ -532,9 +536,6 @@ function handleGitHubLogin() {
             </button>
           </div>
 
-          <p className="login-signup-prompt">
-            Don&apos;t have an account? <Link href="/signup">Create one</Link>
-          </p>
         </div>
 
         <footer className="login-panel-footer">

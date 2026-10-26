@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
+import { createPortal } from "react-dom";
 import Icon from "./Icon";
 import { apiRequest, type WorkspaceRecord } from "@/lib/api";
 
@@ -44,7 +45,7 @@ export default function WorkspaceCreateButton({ onCreated, compact = false }: {
       >
         <Icon name="plus" size={compact ? 15 : 14} />{!compact && " Create workspace"}
       </button>
-      {open && (
+      {open && createPortal(
         <div className="workspace-modal-backdrop" onMouseDown={(event) => {
           if (event.target === event.currentTarget && !submitting) setOpen(false);
         }}>
@@ -65,7 +66,8 @@ export default function WorkspaceCreateButton({ onCreated, compact = false }: {
               </div>
             </form>
           </section>
-        </div>
+        </div>,
+        document.body,
       )}
     </>
   );

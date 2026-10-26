@@ -11,8 +11,6 @@ import WorkspaceCreateButton from "@/app/components/WorkspaceCreateButton";
 import { apiRequest, getToken, type Account, type TaskRecord, type WorkspaceRecord } from "@/lib/api";
 import type { Workspace, WorkspaceIcon } from "@/lib/data";
 
-export const dynamic = "force-dynamic";
-
 const pad = (value: number) => String(value).padStart(2, "0");
 
 function isDueToday(value: string) {
@@ -88,11 +86,11 @@ export default function HomePage() {
   ];
 
   return (
-    <div className={`shell ${profile ? "" : "shell-no-sidebar"}`}>
+    <div className={`shell dashboard-shell ${profile ? "" : "shell-no-sidebar"}`}>
       {profile && <Sidebar profile={profile} workspaces={workspaces} onWorkspaceCreated={(workspace) => setWorkspaces((current) => current.some((item) => item.id === workspace.id) ? current : [...current, workspace].sort((a, b) => a.name.localeCompare(b.name)))} />}
       <div className="main">
         <Topbar />
-        <main className="content">
+        <main className="content dashboard-home-content">
           {profile ? (
             <>
               <div className="hero">

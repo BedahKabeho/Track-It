@@ -456,3 +456,19 @@ def github_login(request):
 
 def github_callback(request):
     return _finish_oauth(request, "github")
+class AdminTaskDetailView(generics.RetrieveDestroyAPIView):
+    serializer_class = AdminTaskSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminRole]
+    queryset = Task.objects.select_related("workspace", "workspace__user").all()
+
+    def perform_destroy(self, instance):
+        owner = instance.workspace.user
+        title = instance.title
+        with transaction.atomic():
+            Notification.objects.create(
+                user=owner,
+                task=instance,
+                notification_type=Notification.Type.TASK_DELETED,
+                message=f'Your task "{title}" was deleted by an administrator.',
+            )
+            instance.delete()
