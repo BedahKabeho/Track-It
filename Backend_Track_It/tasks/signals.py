@@ -10,9 +10,7 @@ def assign_user_role(sender, instance, created, **kwargs):
     if not created:
         return
 
-    role_name = "Admin" if instance.is_superuser else "User"
-
-    role, _ = Role.objects.get_or_create(name=role_name)
+    role, _ = Role.objects.get_or_create(name=Role.RoleName.USER)
 
     UserRole.objects.get_or_create(
         user=instance,
