@@ -1,7 +1,10 @@
 
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 from django.utils import timezone
 from .models import Workspace, Task, Notification
+
+User = get_user_model()
 
 
 class WorkspaceSerializer(serializers.ModelSerializer):
@@ -110,3 +113,57 @@ class NotificationSerializer(serializers.ModelSerializer):
             "created_at",
             "read_at",
         ]
+
+
+class AdminTaskSerializer(serializers.ModelSerializer):
+    workspace_name = serializers.CharField(source="workspace.name", read_only=True)
+    user_name = serializers.SerializerMethodField()
+    user_email = serializers.EmailField(source="workspace.user.email", read_only=True)
+
+    class Meta:
+        model = Task
+        fields = [
+            "id",
+            "title",
+            "description",
+            "status",
+            "due_date",
+            "created_at",
+            "workspace",
+            "workspace_name",
+            "user_name",
+            "user_email",
+        ]
+
+    def get_user_name(self, task):
+        user = task.workspace.user
+        full_name = " ".join(part for part in (user.first_name, user.last_name) if part).strip()
+        return full_name or user.get_username()
+
+
+class AdminUserSerializer(serializers.ModelSerializer):
+    full_name = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
+    workspace_count = serializers.IntegerField(read_only=True)
+    task_count = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = User
+        fields = [
+            "id",
+            "full_name",
+            "email",
+            "is_active",
+            "is_admin",
+            "date_joined",
+            "last_login",
+            "workspace_count",
+            "task_count",
+        ]
+
+    def get_full_name(self, user):
+        full_name = " ".join(part for part in (user.first_name, user.last_name) if part).strip()
+        return full_name or user.get_username()
+
+    def get_is_admin(self, user):
+        return bool(user.is_staff or user.is_superuser or getattr(user, "admin_role", False))

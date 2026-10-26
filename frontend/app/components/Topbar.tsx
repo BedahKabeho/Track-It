@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Icon from "./Icon";
+import ThemeToggle from "./ThemeToggle";
 
 export default function Topbar({ title = "Home" }: { title?: string }) {
   const date = new Date().toLocaleDateString("en-US", {
@@ -27,6 +28,7 @@ export default function Topbar({ title = "Home" }: { title?: string }) {
       </div>
       <div className="topbar-right">
         <time>{date}</time>
+        <ThemeToggle />
         <Link className="icon-btn bordered" aria-label="Notifications" href="/notifications">
           <Icon name="bell" size={15} />
         </Link>

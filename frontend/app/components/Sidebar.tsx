@@ -2,30 +2,35 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Account, WorkspaceRecord } from "@/lib/api";
 import { apiRequest, TOKEN_KEY } from "@/lib/api";
 import { user as sampleUser, workspaces as sampleWorkspaces } from "@/lib/data";
 import Icon from "./Icon";
 import WorkspaceIcon from "./workspace-icon";
+import WorkspaceCreateButton from "./WorkspaceCreateButton";
 
-export default function Sidebar({ profile, workspaces, activeWorkspaceId }: {
+export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWorkspaceCreated }: {
   profile?: Account;
   workspaces?: WorkspaceRecord[];
   activeWorkspaceId?: string;
+  onWorkspaceCreated?: (workspace: WorkspaceRecord) => void;
 } = {}) {
   const router = useRouter();
   const pathname = usePathname();
   const [signingOut, setSigningOut] = useState(false);
   const account = profile ?? { id: 0, full_name: sampleUser.fullName, email: "" };
-  const workspaceList = workspaces ?? sampleWorkspaces.map((workspace) => ({
+  const workspaceList = useMemo(() => workspaces ?? sampleWorkspaces.map((workspace) => ({
     id: Number.isNaN(Number(workspace.id)) ? workspace.id : Number(workspace.id),
     name: workspace.name,
     description: workspace.tagline,
     created_at: "",
     updated_at: "",
-  }));
+  })), [workspaces]);
+  const [sidebarWorkspaces, setSidebarWorkspaces] = useState(workspaceList);
   const initials = account.full_name.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
+
+  useEffect(() => setSidebarWorkspaces(workspaceList), [workspaceList]);
 
   async function signOut() {
     setSigningOut(true);
@@ -52,10 +57,19 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId }: {
         <Link href="/notifications" className={`nav-item ${pathname.startsWith("/notifications") ? "active" : ""}`} aria-current={pathname.startsWith("/notifications") ? "page" : undefined}>
           <Icon name="bell" /><span>Notifications</span>
         </Link>
+        {profile?.is_admin && <Link href="/admin" className={`nav-item ${pathname.startsWith("/admin") ? "active" : ""}`} aria-current={pathname.startsWith("/admin") ? "page" : undefined}>
+          <Icon name="users" /><span>Admin</span>
+        </Link>}
       </nav>
-      <div className="nav-section"><span className="nav-section-label">Workspaces</span></div>
+      <div className="nav-section">
+        <span className="nav-section-label">Workspaces</span>
+        <WorkspaceCreateButton compact onCreated={(workspace) => {
+          setSidebarWorkspaces((current) => [...current, workspace].sort((a, b) => a.name.localeCompare(b.name)));
+          onWorkspaceCreated?.(workspace);
+        }} />
+      </div>
       <nav className="nav" aria-label="Workspaces">
-        {workspaceList.map((workspace, index) => {
+        {sidebarWorkspaces.map((workspace, index) => {
           const href = `/workspaces/${workspace.id}`;
           const active = pathname === href || pathname.startsWith(`${href}/`) || (activeWorkspaceId === String(workspace.id) && pathname.startsWith("/workspaces/"));
           return (

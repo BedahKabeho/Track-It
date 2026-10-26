@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import Sidebar from "@/app/components/Sidebar";
 import Topbar from "@/app/components/Topbar";
@@ -23,6 +24,7 @@ function isDueToday(value: string) {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<Account | null>(null);
   const [workspaces, setWorkspaces] = useState<WorkspaceRecord[]>([]);
   const [tasks, setTasks] = useState<TaskRecord[]>([]);
@@ -37,11 +39,16 @@ export default function HomePage() {
       return () => { active = false; };
     }
 
-    Promise.all([
-      apiRequest<{ user: Account }>("/api/auth/me/"),
-      apiRequest<WorkspaceRecord[]>("/api/workspaces/"),
-      apiRequest<TaskRecord[]>("/api/tasks/"),
-    ]).then(([me, workspaceList, taskList]) => {
+    apiRequest<{ user: Account }>("/api/auth/me/").then(async (me) => {
+      if (!active) return;
+      if (me.user.is_admin) {
+        router.replace("/admin");
+        return;
+      }
+      const [workspaceList, taskList] = await Promise.all([
+        apiRequest<WorkspaceRecord[]>("/api/workspaces/"),
+        apiRequest<TaskRecord[]>("/api/tasks/"),
+      ]);
       if (!active) return;
       setProfile(me.user);
       setWorkspaces(workspaceList);
@@ -53,7 +60,7 @@ export default function HomePage() {
     });
 
     return () => { active = false; };
-  }, []);
+  }, [router]);
 
   const cards = useMemo<Workspace[]>(() => workspaces.map((workspace, index) => {
     const workspaceTasks = tasks.filter((task) => task.workspace === workspace.id);
@@ -82,7 +89,7 @@ export default function HomePage() {
 
   return (
     <div className={`shell ${profile ? "" : "shell-no-sidebar"}`}>
-      {profile && <Sidebar profile={profile} workspaces={workspaces} />}
+      {profile && <Sidebar profile={profile} workspaces={workspaces} onWorkspaceCreated={(workspace) => setWorkspaces((current) => current.some((item) => item.id === workspace.id) ? current : [...current, workspace].sort((a, b) => a.name.localeCompare(b.name)))} />}
       <div className="main">
         <Topbar />
         <main className="content">

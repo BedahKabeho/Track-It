@@ -2,6 +2,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import transaction
+from django.db.models import Count, Exists, OuterRef, Q
 from django.utils import timezone
 from rest_framework import generics, permissions, serializers, status
 from rest_framework.authentication import TokenAuthentication
@@ -9,17 +10,25 @@ from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from .models import Notification, Task, Workspace, UserRole
 from .permissions import IsTrackItAdmin
-
-from .models import Notification, Task, Workspace, Role, UserRole
-from .serializers import NotificationSerializer, TaskSerializer, WorkspaceSerializer
+from .serializers import AdminTaskSerializer, AdminUserSerializer, NotificationSerializer, TaskSerializer, WorkspaceSerializer
 
 User = get_user_model()
 
 
 def user_payload(user):
     full_name = " ".join(part for part in (user.first_name, user.last_name) if part).strip()
-    return {"id": user.id, "full_name": full_name or user.get_username(), "email": user.email}
+    return {
+        "id": user.id,
+        "full_name": full_name or user.get_username(),
+        "email": user.email,
+        "is_admin": bool(
+            user.is_staff
+            or user.is_superuser
+            or UserRole.objects.filter(user=user, role__name="Admin").exists()
+        ),
+    }
 
 
 class RegisterSerializer(serializers.Serializer):
@@ -177,15 +186,66 @@ class NotificationReadView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         serializer.save(read_at=timezone.now())
 
-class AdminTaskListView(generics.ListAPIView):
-    serializer_class = TaskSerializer
-    permission_classes = [
-        permissions.IsAuthenticated,
-        IsTrackItAdmin,
-    ]
+class AdminStatsView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
+
+    def get(self, request):
+        return Response({
+            "total_users": User.objects.count(),
+            "total_workspaces": Workspace.objects.count(),
+            "total_tasks": Task.objects.count(),
+            "pending_tasks": Task.objects.filter(status=Task.Status.PENDING).count(),
+            "in_progress_tasks": Task.objects.filter(status=Task.Status.IN_PROGRESS).count(),
+            "completed_tasks": Task.objects.filter(status=Task.Status.DONE).count(),
+        })
+
+
+class AdminUserListView(generics.ListAPIView):
+    serializer_class = AdminUserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
 
     def get_queryset(self):
-        return Task.objects.select_related(
-            "workspace",
-            "workspace__user",
-        ).all()
+        queryset = User.objects.annotate(
+            workspace_count=Count("workspaces", distinct=True),
+            task_count=Count("workspaces__tasks", distinct=True),
+            admin_role=Exists(UserRole.objects.filter(user_id=OuterRef("pk"), role__name="Admin")),
+        ).order_by("-date_joined")
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(username__icontains=search)
+                | Q(first_name__icontains=search)
+                | Q(last_name__icontains=search)
+                | Q(email__icontains=search)
+            )
+        return queryset
+
+
+class AdminTaskListView(generics.ListAPIView):
+    serializer_class = AdminTaskSerializer
+    permission_classes = [permissions.IsAuthenticated, IsTrackItAdmin]
+
+    def get_queryset(self):
+        queryset = Task.objects.select_related("workspace", "workspace__user").all()
+        task_status = self.request.query_params.get("status")
+        if task_status and task_status != "all":
+            valid_statuses = {choice for choice, _label in Task.Status.choices}
+            if task_status not in valid_statuses:
+                return queryset.none()
+            queryset = queryset.filter(status=task_status)
+
+        workspace_id = self.request.query_params.get("workspace")
+        if workspace_id and workspace_id.isdigit():
+            queryset = queryset.filter(workspace_id=int(workspace_id))
+
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(title__icontains=search)
+                | Q(description__icontains=search)
+                | Q(workspace__name__icontains=search)
+                | Q(workspace__user__first_name__icontains=search)
+                | Q(workspace__user__last_name__icontains=search)
+                | Q(workspace__user__email__icontains=search)
+            )
+        return queryset

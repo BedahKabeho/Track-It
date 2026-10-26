@@ -4,7 +4,10 @@ import { useState, type FormEvent } from "react";
 import Icon from "./Icon";
 import { apiRequest, type WorkspaceRecord } from "@/lib/api";
 
-export default function WorkspaceCreateButton({ onCreated }: { onCreated: (workspace: WorkspaceRecord) => void }) {
+export default function WorkspaceCreateButton({ onCreated, compact = false }: {
+  onCreated: (workspace: WorkspaceRecord) => void;
+  compact?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -32,8 +35,14 @@ export default function WorkspaceCreateButton({ onCreated }: { onCreated: (works
 
   return (
     <>
-      <button className="btn-primary" onClick={() => { setError(""); setOpen(true); }} type="button">
-        <Icon name="plus" size={14} /> Create workspace
+      <button
+        aria-label={compact ? "Create workspace" : undefined}
+        className={compact ? "workspace-add-btn" : "btn-primary"}
+        onClick={() => { setError(""); setOpen(true); }}
+        title={compact ? "Create workspace" : undefined}
+        type="button"
+      >
+        <Icon name="plus" size={compact ? 15 : 14} />{!compact && " Create workspace"}
       </button>
       {open && (
         <div className="workspace-modal-backdrop" onMouseDown={(event) => {
