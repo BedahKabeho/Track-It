@@ -148,7 +148,25 @@ class TaskDetailView(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        return Task.objects.filter(workspace__user=self.request.user)
+        user = self.request.user
+        is_admin = (
+            user.is_authenticated
+            and (
+                user.is_superuser
+                or user.is_staff
+                or UserRole.objects.filter(
+                    user=user,
+                    role__name="Admin"
+                ).exists()
+            )
+        )
+        if is_admin:
+            return Task.objects.select_related(
+                "workspace",
+                "workspace__user"
+            ).all()
+
+        return Task.objects.filter(workspace__user=user)
 
     def perform_update(self, serializer):
         old_task = self.get_object()
