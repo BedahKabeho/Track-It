@@ -88,7 +88,10 @@ export default function LandingPage() {
           <p className="landing-eyebrow">A little clarity for your day</p>
           <h1>Welcome to <span>TrackIt</span></h1>
           <p className="landing-description">Sign in to load your workspaces and tasks from your account.</p>
-          <div className="landing-actions"><Link className="landing-button primary" href="/login">Sign in</Link><Link className="landing-button secondary" href="/signup"><Icon name="plus" size={21} />Create an account</Link></div>
+          <div className="landing-actions">
+            <Link className="landing-button primary" href="/login">Sign in</Link>
+            <Link className="landing-button secondary" href="/signup"><Icon name="plus" size={18} />Create an account</Link>
+          </div>
         </div>
         <LandingPreview />
       </section>
