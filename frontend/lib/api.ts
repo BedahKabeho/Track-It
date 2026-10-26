@@ -3,6 +3,8 @@ export type Account = {
   full_name: string;
   email: string;
   is_admin?: boolean;
+  role?: "ADMIN" | "USER";
+  is_superuser?: boolean;
 };
 
 export type WorkspaceRecord = {
