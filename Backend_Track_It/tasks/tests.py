@@ -6,7 +6,9 @@ from django.contrib.auth import get_user_model
 from django.http import HttpResponseRedirect
 from django.test import RequestFactory, TestCase
 from django.utils import timezone
+from rest_framework.authtoken.models import Token
 from rest_framework.test import APIClient
+from urllib.parse import parse_qs, urlparse
 
 from .admin import (
     TaskAdmin,
@@ -223,6 +225,7 @@ class SocialSignInTests(TestCase):
 
 class RoleAccessTests(TestCase):
     def setUp(self):
+        self.settings(EMAIL_BACKEND="django.core.mail.backends.locmem.EmailBackend")
         self.client = APIClient()
         self.user = User.objects.create_user(
             username="user@example.com",
@@ -254,7 +257,97 @@ class RoleAccessTests(TestCase):
             due_date=timezone.now() + timedelta(days=1),
         )
 
-    def test_registration_cannot_assign_admin_role(self):
+    def test_password_reset_request_sends_link_for_registered_email(self):
+        response = self.client.post(
+            "/api/auth/password-reset/",
+            {"email": self.user.email},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].to, [self.user.email])
+        self.assertIn("/reset-password/#uid=", mail.outbox[0].body)
+        self.assertIn("token=", mail.outbox[0].body)
+
+    def test_password_reset_request_does_not_reveal_unknown_email(self):
+        existing_response = self.client.post(
+            "/api/auth/password-reset/",
+            {"email": self.user.email},
+            format="json",
+        )
+        mail.outbox.clear()
+        unknown_response = self.client.post(
+            "/api/auth/password-reset/",
+            {"email": "unknown@example.com"},
+            format="json",
+        )
+
+        self.assertEqual(unknown_response.status_code, existing_response.status_code)
+        self.assertEqual(unknown_response.data, existing_response.data)
+        self.assertEqual(mail.outbox, [])
+
+    def test_password_reset_link_changes_password_and_revokes_tokens(self):
+        old_token, _ = Token.objects.get_or_create(user=self.user)
+        request_response = self.client.post(
+            "/api/auth/password-reset/",
+            {"email": self.user.email},
+            format="json",
+        )
+        reset_link = next(
+            line for line in mail.outbox[0].body.splitlines()
+            if "/reset-password/#" in line
+        )
+        reset_params = parse_qs(urlparse(reset_link).fragment)
+
+        response = self.client.post(
+            "/api/auth/password-reset/confirm/",
+            {
+                "uid": reset_params["uid"][0],
+                "token": reset_params["token"][0],
+                "new_password": "A-new-strong-password-42!",
+            },
+            format="json",
+        )
+
+        self.assertEqual(request_response.status_code, 200)
+        self.assertEqual(response.status_code, 200)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password("A-new-strong-password-42!"))
+        self.assertFalse(Token.objects.filter(pk=old_token.pk).exists())
+
+    def test_password_reset_link_cannot_be_reused(self):
+        self.client.post(
+            "/api/auth/password-reset/",
+            {"email": self.user.email},
+            format="json",
+        )
+        reset_link = next(
+            line for line in mail.outbox[0].body.splitlines()
+            if "/reset-password/#" in line
+        )
+        reset_params = parse_qs(urlparse(reset_link).fragment)
+        payload = {
+            "uid": reset_params["uid"][0],
+            "token": reset_params["token"][0],
+            "new_password": "A-new-strong-password-42!",
+        }
+
+        first_response = self.client.post(
+            "/api/auth/password-reset/confirm/",
+            payload,
+            format="json",
+        )
+        second_response = self.client.post(
+            "/api/auth/password-reset/confirm/",
+            payload,
+            format="json",
+        )
+
+        self.assertEqual(first_response.status_code, 200)
+        self.assertEqual(second_response.status_code, 400)
+
+    def test_registration_rejects_unverified_legacy_payload(self):
         response = self.client.post(
             "/api/auth/register/",
             {
@@ -268,10 +361,88 @@ class RoleAccessTests(TestCase):
             format="json",
         )
 
-        self.assertEqual(response.status_code, 201)
-        self.assertEqual(response.data["user"]["role"], "USER")
-        self.assertFalse(response.data["user"]["is_admin"])
-        self.assertFalse(response.data["user"]["is_superuser"])
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email="new@example.com").exists())
+
+    def test_registration_requires_email_verification_then_creates_account_without_login(self):
+        email = "verified-new@example.com"
+        send_code_response = self.client.post(
+            "/api/auth/register/send-code/",
+            {
+                "full_name": "Verified New Account",
+                "email": email,
+                "terms_accepted": True,
+            },
+            format="json",
+        )
+        self.assertEqual(send_code_response.status_code, 200)
+        self.assertEqual(mail.outbox[-1].to, [email])
+        self.assertFalse(User.objects.filter(email=email).exists())
+
+        import re
+
+        code_match = re.search(r"\b(\d{6})\b", mail.outbox[-1].body)
+        self.assertIsNotNone(code_match)
+        code = code_match.group(1)
+
+        blocked_response = self.client.post(
+            "/api/auth/register/",
+            {"password": "Unrelated-strong-42!value"},
+            format="json",
+        )
+        self.assertEqual(blocked_response.status_code, 400)
+        self.assertFalse(User.objects.filter(email=email).exists())
+
+        verify_response = self.client.post(
+            "/api/auth/register/verify-code/",
+            {"email": email, "code": code},
+            format="json",
+        )
+        self.assertEqual(verify_response.status_code, 200)
+        self.assertIn("verification_token", verify_response.data)
+
+        register_response = self.client.post(
+            "/api/auth/register/",
+            {
+                "verification_token": verify_response.data["verification_token"],
+                "password": "Unrelated-strong-42!value",
+                "role": "ADMIN",
+                "is_superuser": True,
+            },
+            format="json",
+        )
+
+        self.assertEqual(register_response.status_code, 201)
+        self.assertEqual(
+            register_response.data["detail"],
+            "Account created successfully. You can now sign in.",
+        )
+        self.assertNotIn("token", register_response.data)
+        user = User.objects.get(email=email)
+        self.assertFalse(user.is_superuser)
+        self.assertEqual(user.trackit_role.role.name, Role.RoleName.USER)
+        self.assertFalse(Token.objects.filter(user=user).exists())
+
+    def test_registration_verification_rejects_incorrect_code(self):
+        email = "wrong-code@example.com"
+        self.client.post(
+            "/api/auth/register/send-code/",
+            {
+                "full_name": "Wrong Code",
+                "email": email,
+                "terms_accepted": True,
+            },
+            format="json",
+        )
+
+        response = self.client.post(
+            "/api/auth/register/verify-code/",
+            {"email": email, "code": "000000"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertFalse(User.objects.filter(email=email).exists())
 
     def test_user_cannot_access_admin_endpoint(self):
         self.client.force_authenticate(self.user)
@@ -319,6 +490,41 @@ class RoleAccessTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.data["user"]["role"], "ADMIN")
         self.assertTrue(response.data["user"]["is_admin"])
+
+    def test_regular_admin_cannot_see_superusers_or_activity_timestamps(self):
+        self.client.force_authenticate(self.admin)
+
+        response = self.client.get("/api/admin/users/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn(self.superadmin.pk, {user["id"] for user in response.data})
+        self.assertTrue(response.data)
+        self.assertNotIn("last_active_at", response.data[0])
+
+    def test_superuser_sees_all_users_and_last_active_timestamp(self):
+        active_at = timezone.now()
+        UserRole.objects.filter(user=self.user).update(last_active_at=active_at)
+        self.client.force_authenticate(self.superadmin)
+
+        response = self.client.get("/api/admin/users/")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn(self.superadmin.pk, {user["id"] for user in response.data})
+        listed_user = next(user for user in response.data if user["id"] == self.user.pk)
+        self.assertEqual(
+            datetime.fromisoformat(listed_user["last_active_at"].replace("Z", "+00:00")),
+            active_at,
+        )
+
+    def test_authenticated_api_request_updates_last_active_timestamp(self):
+        token, _ = Token.objects.get_or_create(user=self.user)
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {token.key}")
+
+        response = self.client.get("/api/auth/me/")
+
+        self.assertEqual(response.status_code, 200)
+        self.user.trackit_role.refresh_from_db()
+        self.assertIsNotNone(self.user.trackit_role.last_active_at)
 
     def test_staff_flag_alone_does_not_grant_admin_api_access(self):
         staff_user = User.objects.create_user(

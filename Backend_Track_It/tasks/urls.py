@@ -12,7 +12,11 @@ from .views import (
     SocialAccountsView,
     NotificationListView,
     NotificationReadView,
+    PasswordResetConfirmView,
+    PasswordResetRequestView,
     RegisterView,
+    SignupEmailVerificationRequestView,
+    SignupEmailVerificationView,
     TaskDetailView,
     TaskListCreateView,
     WorkspaceDetailView,
@@ -25,7 +29,11 @@ from .views import (
 )
 
 urlpatterns = [
+    path("auth/register/send-code/", SignupEmailVerificationRequestView.as_view(), name="register-send-code"),
+    path("auth/register/verify-code/", SignupEmailVerificationView.as_view(), name="register-verify-code"),
     path("auth/register/", RegisterView.as_view(), name="register"),
+    path("auth/password-reset/", PasswordResetRequestView.as_view(), name="password-reset-request"),
+    path("auth/password-reset/confirm/", PasswordResetConfirmView.as_view(), name="password-reset-confirm"),
     path("auth/login/", obtain_auth_token, name="login"),
     path("auth/me/", CurrentUserView.as_view(), name="current-user"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),

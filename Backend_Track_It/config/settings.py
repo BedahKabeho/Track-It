@@ -55,8 +55,8 @@ INSTALLED_APPS = [
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-        "rest_framework.authentication.SessionAuthentication",
+        "tasks.authentication.ActiveTokenAuthentication",
+        "tasks.authentication.ActiveSessionAuthentication",
     ],
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticated",
@@ -104,7 +104,7 @@ DATABASES = {
             f"postgresql://{os.getenv('POSTGRES_USER', 'trackituser')}:"
             f"{os.getenv('POSTGRES_PASSWORD', 'trackit-dev-password')}@"
             f"{os.getenv('POSTGRES_HOST', 'localhost')}:"
-            f"{os.getenv('POSTGRES_PORT', '5433')}/"
+            f"{os.getenv('POSTGRES_PORT', '5432')}/"
             f"{os.getenv('POSTGRES_DB', 'trackitdb')}"
         ),
         conn_max_age=0,

@@ -17,8 +17,8 @@ function formatDate(value: string) {
   return new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(value));
 }
 
-function formatLastLogin(value: string | null) {
-  return value ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric", year: "numeric" }).format(new Date(value)) : "Never";
+function formatLastActive(value: string | null | undefined) {
+  return value ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(value)) : "Never";
 }
 
 const statusLabels: Record<AdminTask["status"], string> = {
@@ -231,14 +231,14 @@ export default function AdminPage() {
             {section === "users" ? (
               <>
                 <div className="admin-table-scroll"><table className="admin-table admin-user-table">
-                  <thead><tr><th>User</th><th>Access</th><th>Account</th><th>Workspaces</th><th>Tasks</th><th>Joined</th><th>Last active</th>{profile?.is_superuser && <th>Role management</th>}</tr></thead>
+                  <thead><tr><th>User</th><th>Access</th><th>Account</th><th>Workspaces</th><th>Tasks</th><th>Joined</th>{profile?.is_superuser && <><th>Last active</th><th>Role management</th></>}</tr></thead>
                   <tbody aria-busy={usersLoading}>
                     {users.map((user) => <tr key={user.id}>
                       <td><div className="admin-user"><span className="admin-avatar">{initials(user.full_name)}</span><span><strong>{user.full_name}</strong><small>{user.email || "No email provided"}</small></span></div></td>
                       <td><span className={`admin-pill ${user.is_admin ? "admin" : "member"}`}>{user.is_superuser ? "Superadmin" : user.is_admin ? "Administrator" : "Member"}</span></td>
                       <td><span className={`admin-pill ${user.is_active ? "active" : "suspended"}`}>{user.is_active ? "Active" : "Inactive"}</span></td>
-                      <td>{user.workspace_count}</td><td>{user.task_count}</td><td>{formatDate(user.date_joined)}</td><td>{formatLastLogin(user.last_login)}</td>
-                      {profile?.is_superuser && <td>{user.is_superuser ? "Managed in Django" : <button type="button" disabled={roleSavingUserId === user.id} onClick={() => void changeUserRole(user)}>{roleSavingUserId === user.id ? "Saving..." : user.is_admin ? "Demote to user" : "Promote to admin"}</button>}</td>}
+                      <td>{user.workspace_count}</td><td>{user.task_count}</td><td>{formatDate(user.date_joined)}</td>
+                      {profile?.is_superuser && <><td>{formatLastActive(user.last_active_at)}</td><td>{user.is_superuser ? "Managed in Django" : <button type="button" disabled={roleSavingUserId === user.id} onClick={() => void changeUserRole(user)}>{roleSavingUserId === user.id ? "Saving..." : user.is_admin ? "Demote to user" : "Promote to admin"}</button>}</td></>}
                     </tr>)}
                   </tbody>
                 </table></div>

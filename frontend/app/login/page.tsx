@@ -524,6 +524,10 @@ function handleGitHubLogin() {
               </div>
             </div>
 
+            <div className="login-forgot-password">
+              <Link href="/forgot-password">Forgot password?</Link>
+            </div>
+
             <button className="login-submit-btn" type="submit" disabled={isSubmitting}>
               <svg viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
