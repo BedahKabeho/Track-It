@@ -1,19 +1,26 @@
 import secrets
+from datetime import timedelta
+from urllib.parse import urlencode
 
 from django.contrib.auth import get_user_model
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.contrib.auth.tokens import default_token_generator
+from django.core.mail import send_mail
 from django.db import transaction
-from django.db.models import Count, Exists, OuterRef, Q
+from django.db.models import Count, Exists, F, OuterRef, Q
 from django.shortcuts import get_object_or_404
+from django.utils.encoding import force_bytes, force_str
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
 from django.utils import timezone
 from rest_framework import generics, permissions, serializers, status
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Notification, Role, Task, UserRole, Workspace
+from .authentication import ActiveTokenAuthentication
+from .models import Notification, Role, SignupEmailVerification, Task, UserRole, Workspace
 from .permissions import (
     IsAdminRole,
     IsNotSuperuserCreatingTasks,
@@ -47,7 +54,7 @@ def user_payload(user):
     }
 
 
-class RegisterSerializer(serializers.Serializer):
+class LegacyRegisterSerializer(serializers.Serializer):
     full_name = serializers.CharField(max_length=150, trim_whitespace=True)
     email = serializers.EmailField(max_length=150)
     password = serializers.CharField(write_only=True, trim_whitespace=False)
@@ -88,8 +95,215 @@ class RegisterSerializer(serializers.Serializer):
       return user
 
 
+class SignupEmailVerificationRequestSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=150, trim_whitespace=True)
+    email = serializers.EmailField(max_length=150)
+    terms_accepted = serializers.BooleanField()
+
+    def validate_email(self, value):
+        normalized = value.strip().lower()
+        if User.objects.filter(
+            Q(username__iexact=normalized) | Q(email__iexact=normalized)
+        ).exists():
+            raise serializers.ValidationError("An account with this email already exists.")
+        return normalized
+
+    def validate_terms_accepted(self, value):
+        if not value:
+            raise serializers.ValidationError("You must accept the terms to create an account.")
+        return value
+
+
+class SignupEmailCodeSerializer(serializers.Serializer):
+    email = serializers.EmailField(max_length=150)
+    code = serializers.RegexField(regex=r"^\d{6}$")
+
+    def validate_email(self, value):
+        return value.strip().lower()
+
+
+class RegisterSerializer(serializers.Serializer):
+    verification_token = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, trim_whitespace=False)
+
+    def validate(self, attrs):
+        try:
+            payload = signing.loads(
+                attrs["verification_token"],
+                salt="trackit-signup-email-verification",
+                max_age=15 * 60,
+            )
+            verification = SignupEmailVerification.objects.get(
+                pk=payload["verification_id"],
+                email=payload["email"],
+                verified_at__isnull=False,
+                expires_at__gt=timezone.now(),
+            )
+        except (
+            signing.BadSignature,
+            KeyError,
+            TypeError,
+            ValueError,
+            SignupEmailVerification.DoesNotExist,
+        ) as exc:
+            raise serializers.ValidationError(
+                {"verification_token": "Verify your email address before creating an account."}
+            ) from exc
+
+        if User.objects.filter(
+            Q(username__iexact=verification.email) | Q(email__iexact=verification.email)
+        ).exists():
+            raise serializers.ValidationError(
+                {"verification_token": "An account with this email already exists."}
+            )
+
+        candidate = User(
+            username=verification.email,
+            email=verification.email,
+            first_name=verification.full_name.partition(" ")[0],
+        )
+        try:
+            validate_password(attrs["password"], user=candidate)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"password": exc.messages}) from exc
+
+        attrs["verification"] = verification
+        return attrs
+
+    def create(self, validated_data):
+        verification = SignupEmailVerification.objects.select_for_update().get(
+            pk=validated_data["verification"].pk,
+            verified_at__isnull=False,
+            expires_at__gt=timezone.now(),
+        )
+        full_name = verification.full_name.strip()
+        first_name, _, last_name = full_name.partition(" ")
+        user = User.objects.create_user(
+            username=verification.email,
+            email=verification.email,
+            first_name=first_name,
+            last_name=last_name,
+            password=validated_data["password"],
+        )
+        verification.delete()
+        return user
+
+
+class SignupEmailVerificationRequestView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @transaction.atomic
+    def post(self, request):
+        serializer = SignupEmailVerificationRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        now = timezone.now()
+        verification = SignupEmailVerification.objects.select_for_update().filter(
+            email=data["email"]
+        ).first()
+
+        if verification and verification.sent_at > now - timedelta(seconds=60):
+            return Response(
+                {"detail": "Please wait before requesting another verification code."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        code = f"{secrets.randbelow(1_000_000):06d}"
+        if verification is None:
+            verification = SignupEmailVerification(email=data["email"])
+        verification.full_name = data["full_name"]
+        verification.terms_accepted = data["terms_accepted"]
+        verification.code_hash = make_password(code)
+        verification.attempts = 0
+        verification.sent_at = now
+        verification.expires_at = now + timedelta(minutes=10)
+        verification.verified_at = None
+        verification.save()
+
+        send_mail(
+            subject="Verify your TrackIt account",
+            message=(
+                f"Your TrackIt verification code is {code}.\n\n"
+                "Enter this code to verify your email address and continue creating your account. "
+                "The code expires in 10 minutes."
+            ),
+            from_email=settings.DEFAULT_FROM_EMAIL or None,
+            recipient_list=[verification.email],
+            fail_silently=False,
+        )
+        return Response(
+            {"detail": "A verification code has been sent to your email address."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class SignupEmailVerificationView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @transaction.atomic
+    def post(self, request):
+        serializer = SignupEmailCodeSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+        try:
+            verification = SignupEmailVerification.objects.select_for_update().get(
+                email=data["email"],
+                expires_at__gt=timezone.now(),
+            )
+        except SignupEmailVerification.DoesNotExist:
+            return Response(
+                {"code": ["The code is invalid or has expired. Request a new code."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if verification.verified_at:
+            return Response(
+                {"code": ["This email has already been verified. Continue creating your account."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if verification.attempts >= 5:
+            return Response(
+                {"code": ["Too many incorrect attempts. Request a new verification code."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        if not check_password(data["code"], verification.code_hash):
+            verification.attempts += 1
+            verification.save(update_fields=["attempts"])
+            return Response(
+                {"code": ["The verification code is incorrect."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        verification.verified_at = timezone.now()
+        verification.expires_at = verification.verified_at + timedelta(minutes=15)
+        verification.save(update_fields=["verified_at", "expires_at"])
+        verification_token = signing.dumps(
+            {"verification_id": verification.pk, "email": verification.email},
+            salt="trackit-signup-email-verification",
+        )
+        return Response(
+            {
+                "detail": "Email verified. You can now create your password.",
+                "verification_token": verification_token,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
 class RoleUpdateSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=("ADMIN", "USER"))
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    new_password = serializers.CharField(write_only=True, trim_whitespace=False)
 
 
 class RegisterView(APIView):
@@ -100,17 +314,86 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({"user": user_payload(user), "token": token.key}, status=status.HTTP_201_CREATED)
+        serializer.save()
+        return Response(
+            {"detail": "Account created successfully. You can now sign in."},
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class CurrentUserView(APIView):
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [ActiveTokenAuthentication]
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         return Response({"user": user_payload(request.user)})
+
+
+class PasswordResetRequestView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        email = serializer.validated_data["email"].strip().lower()
+        user = User.objects.filter(email__iexact=email, is_active=True).first()
+
+        if user:
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            reset_url = (
+                f"{settings.FRONTEND_URL.rstrip('/')}/reset-password/"
+                f"#{urlencode({'uid': uid, 'token': token})}"
+            )
+            send_mail(
+                subject="Reset your TrackIt password",
+                message=(
+                    "We received a request to reset your TrackIt password. "
+                    f"Use this link to choose a new password:\n\n{reset_url}\n\n"
+                    "If you did not request this, you can ignore this email."
+                ),
+                from_email=settings.DEFAULT_FROM_EMAIL or None,
+                recipient_list=[user.email],
+                fail_silently=False,
+            )
+
+        return Response(
+            {"detail": "If an account exists for that email, a password reset link has been sent."},
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        try:
+            uid = force_str(urlsafe_base64_decode(data["uid"]))
+            user = User._default_manager.get(pk=uid, is_active=True)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            raise ValidationError({"detail": "This password reset link is invalid or expired."})
+
+        if not default_token_generator.check_token(user, data["token"]):
+            raise ValidationError({"detail": "This password reset link is invalid or expired."})
+
+        try:
+            validate_password(data["new_password"], user=user)
+        except DjangoValidationError as exc:
+            raise ValidationError({"new_password": exc.messages}) from exc
+
+        user.set_password(data["new_password"])
+        user.save(update_fields=["password"])
+        Token.objects.filter(user=user).delete()
+        return Response(
+            {"detail": "Your password has been reset. You can now sign in."},
+            status=status.HTTP_200_OK,
+        )
 
 
 class LogoutView(APIView):
@@ -228,7 +511,10 @@ class AdminUserListView(generics.ListAPIView):
             workspace_count=Count("workspaces", distinct=True),
             task_count=Count("workspaces__tasks", distinct=True),
             admin_role=Exists(UserRole.objects.filter(user_id=OuterRef("pk"), role__name="Admin")),
+            last_active_at=F("trackit_role__last_active_at"),
         ).order_by("-date_joined")
+        if not self.request.user.is_superuser:
+            queryset = queryset.filter(is_superuser=False)
         search = self.request.query_params.get("search", "").strip()
         if search:
             queryset = queryset.filter(

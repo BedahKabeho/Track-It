@@ -36,7 +36,7 @@ export type AdminUser = {
   is_admin: boolean;
   is_superuser: boolean;
   date_joined: string;
-  last_login: string | null;
+  last_active_at?: string | null;
   workspace_count: number;
   task_count: number;
 };

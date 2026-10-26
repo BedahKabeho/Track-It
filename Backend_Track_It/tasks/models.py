@@ -193,6 +193,8 @@ class UserRole(models.Model):
         related_name="users"
     )
 
+    last_active_at = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.user.username} - {self.role.name}"
 
@@ -229,3 +231,18 @@ class SocialAccount(models.Model):
 
     def __str__(self):
         return f"{self.provider}: {self.user}"
+
+
+class SignupEmailVerification(models.Model):
+    email = models.EmailField(unique=True)
+    full_name = models.CharField(max_length=150)
+    terms_accepted = models.BooleanField(default=False)
+    code_hash = models.CharField(max_length=128)
+    attempts = models.PositiveSmallIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    sent_at = models.DateTimeField()
+    expires_at = models.DateTimeField()
+    verified_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return self.email

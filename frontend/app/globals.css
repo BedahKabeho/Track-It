@@ -1671,34 +1671,48 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
 .signup-form { display: flex; flex-direction: column; margin-top: 12px; }
 .signup-field { display: flex; flex-direction: column; min-width: 0; }
 .signup-field + .signup-field { margin-top: 20px; }
-.signup-field label { color: #4d585b; font-size: 12px; font-weight: 600; line-height: 18px; }
+.signup-field label { color: #4d585b; font-size: 13px; font-weight: 600; line-height: 20px; }
 .signup-input-wrap {
-  height: 38px;
+  height: 44px;
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-right: 4px;
-  margin-top: 2px;
-  padding: 0 10px;
-  border: 1px solid #a9acad;
-  border-radius: 7px;
+  margin-right: 0;
+  margin-top: 5px;
+  padding: 0 12px;
+  border: 1px solid #cbd8da;
+  border-radius: 8px;
   color: #25a3b3;
+}
+.signup-input-wrap > svg {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
 }
 .signup-input-wrap:focus-within { border-color: #299ca6; box-shadow: 0 0 0 1px #299ca6; }
 .signup-input-wrap input {
+  display: block;
+  flex: 1 1 0;
   width: 100%;
   min-width: 0;
-  height: 100%;
+  height: 42px;
+  align-self: center;
+  margin: 0;
+  padding: 0;
   border: 0;
   outline: 0;
   background: transparent;
   color: #354044;
   font: inherit;
-  font-size: 12px;
+  font-size: 14px;
+  line-height: 20px;
+  text-align: left;
 }
-.signup-input-wrap input::placeholder { color: #9bcbd1; opacity: 1; }
+.signup-input-wrap input::placeholder { color: #7c9298; opacity: 1; }
+.signup-input-wrap input:focus-visible { outline: 0; }
 .password-visibility { flex: 0 0 auto; display: grid; place-items: center; padding: 4px 0 4px 4px; color: #25a3b3; }
-.signup-field:first-child .signup-input-wrap { margin-top: -2px; }
+.signup-field:first-child .signup-input-wrap { margin-top: 5px; }
 .signup-field:nth-of-type(2) { margin-top: 22px; }
 .signup-field:nth-of-type(3) { margin-top: 14px; }
 .signup-field:nth-of-type(4) { margin-top: 16px; }
@@ -1743,6 +1757,13 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
 .signup-submit:disabled { cursor: wait; opacity: .75; }
 .signup-message { min-height: 20px; margin-top: 10px; color: #a33333; font-size: 12px; text-align: center; }
 .signup-message.success { color: #257b54; }
+.signup-step-description { margin: 0 0 16px; color: #647987; font-size: 12px; line-height: 1.5; }
+.signup-step-description strong { color: #344d5d; overflow-wrap: anywhere; }
+.signup-secondary-action { align-self: center; margin-top: 10px; color: var(--teal-dark); font-size: 12px; font-weight: 600; }
+.signup-secondary-action:hover { text-decoration: underline; }
+.signup-secondary-action:disabled { cursor: wait; opacity: .65; }
+.signup-success { display: flex; flex-direction: column; align-items: center; }
+.signup-success-link { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .signup-login-link { margin-top: 14px; color: #8ba5ac; font-size: 11px; text-align: center; }
 .signup-login-link a { color: var(--teal); font-weight: 600; }
 .signup-login-link a:hover { text-decoration: underline; }
@@ -2045,7 +2066,6 @@ h2 { font-size: 16px; font-weight: 600; display: flex; align-items: center; gap:
   .landing-benefit h2 { margin: 2px 0 4px; font-size: 15px; }
   .landing-benefit p { max-width: 290px; font-size: 12px; line-height: 1.6; }
 }
-
 /* App-wide dark theme */
 .auth-theme-toggle {
   position: fixed;
@@ -2616,4 +2636,259 @@ html[data-theme="dark"] .legal-btn-agree {
   background: #ffffff;
   color: #000000;
   border-color: #ffffff;
+.password-flow-page { display: grid; min-height: 100vh; place-items: center; padding: 24px; background: var(--bg); }
+.password-flow-card { width: min(100%, 440px); padding: 36px; border: 1px solid var(--border); border-radius: 16px; background: var(--surface); box-shadow: 0 16px 48px rgba(20, 60, 74, 0.08); }
+.password-flow-brand { display: inline-block; margin-bottom: 28px; color: var(--teal-dark); font-size: 14px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.password-flow-card h1 { font-size: 25px; }
+.password-flow-card > p { margin-top: 8px; color: var(--text-2); }
+.password-flow-form { display: grid; gap: 10px; margin-top: 24px; }
+.password-flow-form label { margin-top: 8px; color: var(--text-2); font-size: 13px; font-weight: 600; }
+.password-flow-form input { width: 100%; height: 44px; padding: 0 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text); font: inherit; }
+.password-flow-form .login-submit-btn { width: 100%; margin-top: 12px; }
+.password-flow-back { display: inline-block; margin-top: 22px; color: var(--teal-dark); font-weight: 600; }
+.password-flow-card .login-feedback { margin-top: 16px; }
+html[data-theme="dark"] .password-flow-card { background: var(--surface); border-color: var(--border); }
+html[data-theme="dark"] .password-flow-form input { background: #111a1d; border-color: #405156; color: var(--text); }
+.login-forgot-password { display: flex; justify-content: flex-end; margin: -5px 0 16px; font-size: 12px; }
+.login-forgot-password a { color: var(--teal-dark); font-weight: 600; }
+html[data-theme="dark"] .login-forgot-password a,
+html[data-theme="dark"] .password-flow-brand,
+html[data-theme="dark"] .password-flow-back { color: #62c6ce; }
+@media (max-width: 480px) {
+  .password-flow-card { padding: 28px 22px; }
+}
+.password-flow-forgot-page {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: #edf5f3;
+}
+.password-flow-shell {
+  width: min(100%, 1120px);
+  min-height: min(760px, calc(100vh - 48px));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #e2eeeb;
+  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 83% 44%, rgba(208, 243, 236, 0.65), transparent 32%),
+    linear-gradient(115deg, #ffffff 0%, #f9fdfb 58%, #f1faf7 100%);
+  box-shadow: 0 12px 36px rgba(23, 66, 58, 0.1);
+}
+.password-flow-header {
+  height: 66px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 34px;
+  border-bottom: 1px solid #eaf1ef;
+  background: rgba(255, 255, 255, 0.78);
+}
+.password-flow-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #19364a;
+  font-size: 20px;
+}
+.password-flow-logo-mark {
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 6px;
+  background: #0b9991;
+}
+.password-flow-logo-mark svg {
+  width: 19px;
+  height: 19px;
+  fill: none;
+  stroke: #fff;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.password-flow-header-link {
+  color: #138a86;
+  font-size: 13px;
+  font-weight: 700;
+}
+.password-flow-main {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 0.9fr);
+  align-items: center;
+  gap: clamp(28px, 6vw, 82px);
+  padding: 58px clamp(34px, 6vw, 72px);
+}
+.password-flow-forgot-content {
+  width: 100%;
+  max-width: 470px;
+  justify-self: center;
+}
+.password-flow-eyebrow {
+  color: #078d88;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2.2px;
+}
+.password-flow-forgot-content h1 {
+  margin-top: 15px;
+  color: #1e3149;
+  font-size: clamp(30px, 4vw, 42px);
+  font-weight: 750;
+  letter-spacing: -1.2px;
+  line-height: 1.12;
+}
+.password-flow-forgot-content > p {
+  max-width: 440px;
+  margin-top: 15px;
+  color: #506477;
+  font-size: 15px;
+  line-height: 1.65;
+}
+.password-flow-forgot-content .password-flow-form {
+  gap: 10px;
+  margin-top: 30px;
+}
+.password-flow-forgot-content .password-flow-form label {
+  margin: 0 0 1px;
+  color: #344d5d;
+  font-size: 13px;
+}
+.password-flow-forgot-content .password-flow-form input {
+  height: 48px;
+  border: 1px solid #cddedb;
+  border-radius: 7px;
+  background: #fff;
+  color: #1e3948;
+  font-size: 14px;
+}
+.password-flow-forgot-content .password-flow-form input:focus {
+  border-color: #109b94;
+  outline: 3px solid rgba(16, 155, 148, 0.13);
+}
+.password-flow-forgot-content .password-flow-form .login-submit-btn {
+  height: 48px;
+  margin-top: 8px;
+  border-radius: 7px;
+  background: #0b9991;
+  box-shadow: none;
+  font-size: 14px;
+}
+.password-flow-forgot-content .password-flow-form .login-submit-btn:hover {
+  background: #087f79;
+  box-shadow: none;
+}
+.password-flow-signin-prompt {
+  margin-top: 20px;
+  color: #647987;
+  font-size: 13px;
+}
+.password-flow-signin-prompt a { color: #078d88; font-weight: 700; }
+.password-flow-reassurance {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.password-flow-reassurance-art {
+  position: relative;
+  width: min(100%, 330px);
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 235, 224, 0.62) 0 44%, rgba(217, 245, 238, 0.3) 45% 64%, transparent 65%);
+}
+.password-flow-orbit {
+  position: absolute;
+  border: 1px solid rgba(12, 153, 143, 0.14);
+  border-radius: 50%;
+}
+.password-flow-orbit-one { inset: 12%; }
+.password-flow-orbit-two { inset: 23%; }
+.password-flow-shield {
+  width: 118px;
+  height: 132px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(7, 145, 137, 0.1);
+  border-radius: 30px;
+  background: linear-gradient(145deg, #ffffff 5%, #e7f8f4 100%);
+  box-shadow: 0 18px 42px rgba(17, 112, 102, 0.16);
+  transform: rotate(-5deg);
+}
+.password-flow-shield svg {
+  width: 60px;
+  height: 60px;
+  fill: none;
+  stroke: #0b9991;
+  stroke-width: 2.3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.password-flow-spark {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: #47c6b5;
+  box-shadow: 0 0 0 7px rgba(71, 198, 181, 0.12);
+}
+.password-flow-spark-one { top: 25%; right: 20%; }
+.password-flow-spark-two { bottom: 25%; left: 18%; width: 9px; height: 9px; }
+.password-flow-reassurance h2 {
+  margin-top: -9px;
+  color: #213b4e;
+  font-size: 18px;
+}
+.password-flow-reassurance > p {
+  max-width: 310px;
+  margin-top: 7px;
+  color: #637b85;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.password-flow-footer {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 20px clamp(34px, 5vw, 60px);
+  border-top: 1px solid #e6f0ed;
+  color: #3f5967;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+}
+html[data-theme="dark"] .password-flow-shell { border-color: #35474f; background: #182226; }
+html[data-theme="dark"] .password-flow-header { border-color: #35474f; background: #182226; }
+html[data-theme="dark"] .password-flow-logo,
+html[data-theme="dark"] .password-flow-forgot-content h1,
+html[data-theme="dark"] .password-flow-reassurance h2 { color: #e8f0f2; }
+html[data-theme="dark"] .password-flow-forgot-content > p,
+html[data-theme="dark"] .password-flow-reassurance > p,
+html[data-theme="dark"] .password-flow-signin-prompt { color: #b3c1c8; }
+html[data-theme="dark"] .password-flow-forgot-content .password-flow-form label,
+html[data-theme="dark"] .password-flow-footer { color: #c0cdd1; }
+html[data-theme="dark"] .password-flow-forgot-content .password-flow-form input { background: #111a1d; border-color: #405156; color: #e8f0f2; }
+html[data-theme="dark"] .password-flow-footer { border-color: #35474f; }
+@media (max-width: 760px) {
+  .password-flow-forgot-page { padding: 14px; }
+  .password-flow-shell { min-height: calc(100vh - 28px); }
+  .password-flow-header { height: 58px; padding: 0 20px; }
+  .password-flow-main { grid-template-columns: 1fr; gap: 12px; padding: 44px 28px 30px; }
+  .password-flow-forgot-content { max-width: 520px; }
+  .password-flow-reassurance { display: none; }
+  .password-flow-footer { grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; }
+}
+@media (max-width: 480px) {
+  .password-flow-forgot-page { padding: 0; }
+  .password-flow-shell { min-height: 100vh; min-height: 100dvh; border: 0; border-radius: 0; }
+  .password-flow-main { padding: 36px 22px; }
+  .password-flow-forgot-content h1 { font-size: 32px; }
+  .password-flow-footer { font-size: 11px; }
 }
