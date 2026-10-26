@@ -3,9 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authApi } from "@/src/lib/api/auth";
-import { ApiError } from "@/src/lib/api/client";
-import { TOKEN_KEY } from '../../lib/api';
+import { apiRequest, TOKEN_KEY } from "@/lib/api";
 
 function Brand() {
   return (
@@ -269,13 +267,17 @@ export default function LoginPage() {
     setFeedback(null);
     setIsSubmitting(true);
     try {
-      const result = await authApi.login({ email, password });
+      const result = await apiRequest<{ token: string }>("/api/auth/login/", {
+        method: "POST",
+        body: JSON.stringify({ username: email.trim(), password }),
+      }, false);
       window.localStorage.setItem(TOKEN_KEY, result.token);
-      router.replace("/dashboard");
+      const { user } = await apiRequest<{ user: { is_admin?: boolean } }>("/api/auth/me/");
+      router.replace(user.is_admin ? "/admin" : "/dashboard");
     } catch (error) {
       setFeedback({
         type: "error",
-        message: error instanceof ApiError ? error.message : "Sign in failed. Please try again.",
+        message: error instanceof Error ? error.message : "Sign in failed. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
@@ -283,16 +285,7 @@ export default function LoginPage() {
   }
 
   async function handleGoogleLogin() {
-    setFeedback(null);
-    try {
-      const { authorization_url: authorizationUrl } = await authApi.googleLogin();
-      window.location.assign(authorizationUrl);
-    } catch (error) {
-      setFeedback({
-        type: "error",
-        message: error instanceof ApiError ? error.message : "Google sign in is unavailable right now.",
-      });
-    }
+    setFeedback({ type: "error", message: "Google sign in is not configured for this app yet." });
   }
 
   function handleGitHubLogin() {

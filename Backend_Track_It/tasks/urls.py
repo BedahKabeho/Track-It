@@ -1,7 +1,9 @@
 from django.urls import path
 from rest_framework.authtoken.views import obtain_auth_token
-
 from .views import (
+    AdminStatsView,
+    AdminTaskListView,
+    AdminUserListView,
     CurrentUserView,
     LogoutView,
     NotificationListView,
@@ -11,7 +13,6 @@ from .views import (
     TaskListCreateView,
     WorkspaceDetailView,
     WorkspaceListCreateView,
-    AdminTaskListView,
 )
 
 urlpatterns = [
@@ -19,11 +20,13 @@ urlpatterns = [
     path("auth/login/", obtain_auth_token, name="login"),
     path("auth/me/", CurrentUserView.as_view(), name="current-user"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("admin/stats/", AdminStatsView.as_view(), name="admin-stats"),
+    path("admin/users/", AdminUserListView.as_view(), name="admin-users"),
+    path("admin/tasks/", AdminTaskListView.as_view(), name="admin-tasks"),
     path("workspaces/", WorkspaceListCreateView.as_view(), name="workspace-list-create"),
     path("workspaces/<int:pk>/", WorkspaceDetailView.as_view(), name="workspace-detail"),
     path("tasks/", TaskListCreateView.as_view(), name="task-list-create"),
     path("tasks/<int:pk>/", TaskDetailView.as_view(), name="task-detail"),
     path("notifications/", NotificationListView.as_view(), name="notification-list"),
     path("notifications/<int:pk>/read/", NotificationReadView.as_view(), name="notification-read"),
-    path("admin/tasks/",AdminTaskListView.as_view(), name="admin-task-list",),
 ]
