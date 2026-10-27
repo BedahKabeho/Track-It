@@ -14,9 +14,12 @@ The initial route contract is:
 | Current user | GET | `/auth/me/` | → user |
 | Password reset | POST | `/auth/password-reset/` | `{ email }` → confirmation |
 | Google sign in | GET | `/auth/google/` | → `{ authorization_url }` |
+| Connected social accounts | GET | `/auth/social-accounts/` | Authenticated → `{ providers }` |
+| Create provider-link ticket | POST | `/auth/social-accounts/link-ticket/` | Authenticated `{ provider }` → short-lived `{ ticket }` |
+| Link social account | GET | `/auth/{google|github}/link/?ticket={ticket}` | Completes provider authorization and links it to the signed-in account |
 | List/create tasks | GET/POST | `/tasks/` | → task list / created task |
 | Read/update/delete task | GET/PATCH/DELETE | `/tasks/{id}/` | → task / updated task / no content |
 
-These paths are a frontend contract placeholder because the Django app does not expose API routes yet. When backend routes are agreed, update `config.ts` and, if needed, the request/response types in the feature service. `client.ts` includes credentials for cookie-based sessions and normalizes JSON/API errors in one place.
+`client.ts` includes credentials for cookie-based sessions and normalizes JSON/API errors in one place. Authenticated endpoints use the Track-It token from local storage. Provider links must be initiated from Account settings after signing in; matching email addresses do not automatically link accounts.
 
 For local development, Django must allow the frontend origin (normally `http://localhost:3000`) through CORS. If the API uses Django session authentication, its CORS and CSRF settings must allow credentialed requests from that origin. If the agreed API uses bearer tokens instead, add that authorization handling in the shared client rather than in individual pages.
