@@ -1,3 +1,5 @@
+export { API_BASE_URL } from "../src/lib/api/config";
+
 export type Account = {
   id: number;
   full_name: string;

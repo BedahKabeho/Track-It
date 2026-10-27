@@ -77,6 +77,9 @@ export default function Sidebar({ profile, workspaces, activeWorkspaceId, onWork
         <Link href="/notifications" className={`nav-item ${pathname.startsWith("/notifications") ? "active" : ""}`} aria-current={pathname.startsWith("/notifications") ? "page" : undefined}>
           <Icon name="bell" /><span>Notifications</span><span className="nav-badge" aria-label={`${notificationCount} notifications`}>{notificationCount}</span>
         </Link>
+        <Link href="/settings" className={`nav-item ${pathname.startsWith("/settings") ? "active" : ""}`} aria-current={pathname.startsWith("/settings") ? "page" : undefined}>
+          <Icon name="user" /><span>Account settings</span>
+        </Link>
         {profile?.is_admin && <Link href="/admin" className={`nav-item ${pathname.startsWith("/admin") ? "active" : ""}`} aria-current={pathname.startsWith("/admin") ? "page" : undefined}>
           <Icon name="users" /><span>Admin</span>
         </Link>}

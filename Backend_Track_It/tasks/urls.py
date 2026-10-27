@@ -8,6 +8,8 @@ from .views import (
     AdminUserRoleUpdateView,
     CurrentUserView,
     LogoutView,
+    SocialAccountLinkTicketView,
+    SocialAccountsView,
     NotificationListView,
     NotificationReadView,
     PasswordResetConfirmView,
@@ -23,6 +25,7 @@ from .views import (
     google_callback,
     github_login,
     github_callback,
+    social_link_start,
 )
 
 urlpatterns = [
@@ -34,6 +37,8 @@ urlpatterns = [
     path("auth/login/", obtain_auth_token, name="login"),
     path("auth/me/", CurrentUserView.as_view(), name="current-user"),
     path("auth/logout/", LogoutView.as_view(), name="logout"),
+    path("auth/social-accounts/", SocialAccountsView.as_view(), name="social-accounts"),
+    path("auth/social-accounts/link-ticket/", SocialAccountLinkTicketView.as_view(), name="social-account-link-ticket"),
     path("admin/stats/", AdminStatsView.as_view(), name="admin-stats"),
     path("admin/users/", AdminUserListView.as_view(), name="admin-users"),
     path("admin/users/<int:user_id>/role/", AdminUserRoleUpdateView.as_view(), name="admin-user-role"),
@@ -49,4 +54,5 @@ urlpatterns = [
     path("auth/google/callback/", google_callback, name="oauth-google-callback"),
     path("auth/github/", github_login, name="oauth-github-login"),
     path("auth/github/callback/",github_callback, name="oauth-github-callback"),
+    path("auth/<str:provider>/link/", social_link_start, name="social-account-link"),
 ]
