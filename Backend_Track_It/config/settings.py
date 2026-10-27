@@ -23,11 +23,13 @@ load_dotenv(BASE_DIR.parent / ".env")
 # See https://docs.djangoproject.com/en/6.1/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-IS_RENDER = os.getenv("RENDER") == "true"
+IS_RENDER = os.getenv("RENDER", "").lower() == "true"
 
-SECRET_KEY = os.environ.get("SECRET_KEY", "local-development-only-key")
-if IS_RENDER and "SECRET_KEY" not in os.environ:
-    raise RuntimeError("SECRET_KEY must be set in production")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("DJANGO_SECRET_KEY")
+if not SECRET_KEY:
+    if IS_RENDER:
+        raise RuntimeError("SECRET_KEY (or DJANGO_SECRET_KEY) must be set in production")
+    SECRET_KEY = "local-development-only-key"
 
 DEBUG = not IS_RENDER
 
@@ -109,7 +111,7 @@ DATABASES = {
         ),
         conn_max_age=0,
         conn_health_checks=True,
-        ssl_require=bool(os.getenv("DATABASE_URL") and os.getenv("RENDER")),
+        ssl_require=bool(os.getenv("DATABASE_URL") and IS_RENDER),
     )
 }
 
